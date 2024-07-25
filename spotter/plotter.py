@@ -1,5 +1,7 @@
 from datetime import date
 import argparse
+from pathlib import Path
+import re
 
 import yaml
 
@@ -7,8 +9,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.dates import date2num
 
-from spotter.parser import extract_all_points
-from spotter.fetcher import do_fetch_all
 from spotter.fitter import piecewise_const
 from spotter.utilities import date_range
 
@@ -20,6 +20,12 @@ def main():
         type=str,
         default="config.yaml",
         help="Path to the configuration file",
+    )
+    parser.add_argument(
+        "--data-dir",
+        type=Path,
+        default="data",
+        help="Directory to store the data",
     )
     args = parser.parse_args()
 
@@ -50,14 +56,18 @@ def main():
         for flavor in flavors
     }
 
-    results_per_flavor = do_fetch_all(dates=date_list, flavors=flavors)
-    data_per_flavor = {
-        flavor: extract_all_points(results, flavor)
-        for flavor, results in results_per_flavor.items()
-    }
+    data_per_algorithm_per_flavor = {flavor: {} for flavor in flavors}
+    for flavor in flavors:
+        for file in args.data_dir.glob(f"{flavor}_*.csv"):
+            algorithm = re.search(f"{flavor}_(.*).csv", file.name).group(1)
+            df = pd.read_csv(file, parse_dates=["date"])
+            df["date"] = pd.to_datetime(df["date"])
+            df.index = df["date"]
+            data_per_algorithm_per_flavor[flavor][algorithm] = df
 
     track_finding_data = {
-        flavor: data["track_finding"] for flavor, data in data_per_flavor.items()
+        flavor: data["track_finding"]
+        for flavor, data in data_per_algorithm_per_flavor.items()
     }
 
     track_finding_data_fit = {
@@ -120,7 +130,9 @@ def main():
 
     for flavor, annotations in annotations_per_flavor.items():
         for annotation in annotations:
-            d, s, ha, txy = [annotation[k] for k in ["date", "text", "alignment", "offset"]]
+            d, s, ha, txy = [
+                annotation[k] for k in ["date", "text", "alignment", "offset"]
+            ]
             d = date.fromisoformat(d)
 
             if d not in date_list:

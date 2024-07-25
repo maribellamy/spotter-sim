@@ -3,6 +3,13 @@ from concurrent.futures import ThreadPoolExecutor
 import urllib.request
 from urllib.error import HTTPError
 import itertools
+import argparse
+from pathlib import Path
+
+import yaml
+
+from spotter.parser import extract_all_points
+from spotter.utilities import date_range
 
 
 def get_url(d: date, flavor: str) -> str:
@@ -25,7 +32,7 @@ def do_fetch(d: date, flavor: str) -> tuple[date, list[None | str]]:
     try:
         return urllib.request.urlopen(url).read().decode("utf-8")
     except HTTPError as e:
-        print(d, url, e)
+        print(d, flavor, url, e)
         return None
 
 
@@ -49,3 +56,44 @@ def do_fetch_all(
         ]
         for flavor in flavors
     }
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config",
+        type=str,
+        default="config.yaml",
+        help="Path to the configuration file",
+    )
+    parser.add_argument(
+        "--data-dir",
+        type=Path,
+        default="data",
+        help="Directory to store the data",
+    )
+    args = parser.parse_args()
+
+    with open(args.config, "r") as f:
+        config = yaml.safe_load(f)
+
+    start_date = date.fromisoformat(config["dates"]["start"])
+    end_date = date.fromisoformat(config["dates"]["end"])
+    date_list = date_range(start_date, end_date)
+    flavors = {
+        flavor: config["flavors"][flavor]["tag"] for flavor in config["flavors"].keys()
+    }
+
+    results_per_flavor = do_fetch_all(dates=date_list, flavors=flavors)
+    data_per_algorithm_per_flavor = {
+        flavor: extract_all_points(results, flavor)
+        for flavor, results in results_per_flavor.items()
+    }
+
+    for flavor, data_per_algorithm in data_per_algorithm_per_flavor.items():
+        for algorithm, data in data_per_algorithm.items():
+            data.to_csv(f"{args.data_dir}/{flavor}_{algorithm}.csv", index=False)
+
+
+if __name__ == "__main__":
+    main()

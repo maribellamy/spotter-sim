@@ -11,7 +11,11 @@ pip install -r requirements.txt
 
 How to run it:
 ```bash
-python -m spotter.spotter
+# run the fetching
+python -m spotter.fetcher
+
+# run the plotting
+python -m spotter.plotter
 ```
 
 Afterwards you should find a couple of PNG and PDF files in the current working directory.
