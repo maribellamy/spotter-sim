@@ -1,16 +1,31 @@
 dates:
   start: "2024-02-01"
-  end: "2024-07-14"
+  end: "2024-07-23"
 
 flavors:
   legacy_default:
     tag: "tracking"
+    label: "Athena Default Track Finding"
+
+    piecewise_const:
+      - { start: "2024-02-01", end: "2024-02-23" }
+      - { start: "2024-03-01", end: "2024-07-23" }
+    
+    annotations: []
 
   legacy_fast:
     tag: "fasttracking"
+    label: "Athena Fast Track Finding"
+
+    piecewise_const:
+      - { start: "2024-02-01", end: "2024-02-23" }
+      - { start: "2024-03-01", end: "2024-07-23" }
+    
+    annotations: []
 
   acts_default:
     tag: "actstracking"
+    label: "Acts-based Default Track Finding"
 
     piecewise_const:
       - { start: "2023-11-01", end: "2023-11-07" }
@@ -32,13 +47,13 @@ flavors:
       - { start: "2024-05-24", end: "2024-06-04" }
       - { start: "2024-06-05", end: "2024-07-01" }
       - { start: "2024-07-02", end: "2024-07-07" }
-      - { start: "2024-07-08", end: "2024-07-14" }
+      - { start: "2024-07-08", end: "2024-07-23" }
 
     annotations:
-      # - { date: "2023-11-08", text: "!66631 - Switch ACTS\ntracking to\nAthena backends", alignment: "center", offset: [30, -250] }
-      # - { date: "2023-11-13", text: "Potentially more\nEDM related changes\nlike !67034 and/or !66992", alignment: "center", offset: [100, -350] }
-      # - { date: "2023-11-24", text: "!66813 - KF on seed", alignment: "center", offset: [50, 30] }
-      # - { date: "2023-11-29", text: "!67323 - Aux in MTJ", alignment: "center", offset: [50, 30] }
+      - { date: "2023-11-08", text: "!66631 - Switch ACTS\ntracking to\nAthena backends", alignment: "center", offset: [30, -250] }
+      - { date: "2023-11-13", text: "Potentially more\nEDM related changes\nlike !67034 and/or !66992", alignment: "center", offset: [100, -350] }
+      - { date: "2023-11-24", text: "!66813 - KF on seed", alignment: "center", offset: [50, 30] }
+      - { date: "2023-11-29", text: "!67323 - Aux in MTJ", alignment: "center", offset: [50, 30] }
       - { date: "2024-02-08", text: "Accidentally\ndeployed fast\ntracking config !67296", alignment: "center", offset: [0, -70] }
       - { date: "2024-02-15", text: "Restored with !68800", alignment: "center", offset: [60, -200] }
       - { date: "2024-03-01", text: "Unclear", alignment: "center", offset: [30, 80] }
@@ -57,3 +72,9 @@ flavors:
 
   acts_fast:
     tag: "actsfasttracking"
+    label: "Acts-based Fast Track Finding"
+
+    piecewise_const:
+      - { start: "2024-07-10", end: "2024-07-23" }
+    
+    annotations: []

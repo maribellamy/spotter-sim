@@ -5,7 +5,7 @@ from collections import defaultdict
 import pandas as pd
 
 
-def parse_spot(txt):
+def parse_spot(txt: str) -> pd.DataFrame:
     p = re.compile(
         r"\d\d:\d\d:\d\d PerfMonMTSvc\s+INFO (\w+?)\s+(\d+)\s+(\d+(?:\.\d*)?)\s+(\d+(?:\.\d*)?)\s+(\d+(?:\.\d*)?)\s+(.+)"
     )
@@ -24,7 +24,7 @@ def parse_spot(txt):
     return result
 
 
-def convert_point(d, p):
+def convert_point(d: date, p: dict) -> dict:
     return {
         "date": d,
         "cpu": p["cpu"] / p["count"] * 1e-3,
@@ -33,7 +33,7 @@ def convert_point(d, p):
     }
 
 
-def sum_two_points(a, b):
+def sum_two_points(a: dict, b: dict) -> dict:
     if a["date"] != b["date"]:
         raise Exception("mixed dates")
     return {
@@ -44,7 +44,7 @@ def sum_two_points(a, b):
     }
 
 
-def null_point(d):
+def null_point(d: date) -> dict:
     return {
         "date": d,
         "cpu": None,
@@ -53,14 +53,14 @@ def null_point(d):
     }
 
 
-def extract_athena_track_finding_point(data):
+def extract_athena_track_finding_point(data: pd.DataFrame):
     data = data[(data["component"] == "ITkSiSpTrackFinder")]
     if len(data) == 0:
         raise Exception("not found")
     return data.iloc[0]
 
 
-def extract_acts_pixel_seeding_point(data):
+def extract_acts_pixel_seeding_point(data: pd.DataFrame):
     data = data[
         (
             (data["component"] == "ActsPixelSeedingAlg")
@@ -72,7 +72,7 @@ def extract_acts_pixel_seeding_point(data):
     return data.iloc[0]
 
 
-def extract_acts_strip_seeding_point(data):
+def extract_acts_strip_seeding_point(data: pd.DataFrame):
     data = data[
         (
             (data["component"] == "ActsStripSeedingAlg")
@@ -84,7 +84,7 @@ def extract_acts_strip_seeding_point(data):
     return data.iloc[0]
 
 
-def extract_acts_ckf_point(data):
+def extract_acts_ckf_point(data: pd.DataFrame):
     data = data[
         (
             (data["component"] == "ActsTrackFindingAlg")
@@ -96,7 +96,7 @@ def extract_acts_ckf_point(data):
     return data.iloc[0]
 
 
-def extract_athena_points(d, data):
+def extract_athena_points(d: date, data: pd.DataFrame):
     null = null_point(d)
 
     try:
@@ -110,7 +110,7 @@ def extract_athena_points(d, data):
     }
 
 
-def extract_acts_default_points(d, data):
+def extract_acts_default_points(d: date, data: pd.DataFrame) -> dict:
     null = null_point(d)
 
     try:
@@ -150,7 +150,7 @@ def extract_acts_default_points(d, data):
     }
 
 
-def extract_acts_fast_points(d, data):
+def extract_acts_fast_points(d: date, data: pd.DataFrame) -> dict:
     null = null_point(d)
 
     try:
@@ -177,33 +177,27 @@ def extract_acts_fast_points(d, data):
     }
 
 
-def extract_points(d: date, txts: list[str]):
-    legacy_default_txt, legacy_fast_txt, acts_default_txt, acts_fast_txt = txts
-
-    result = {}
-
-    if legacy_default_txt is not None:
-        legacy_default_spot_data = parse_spot(legacy_default_txt)
+def extract_points(d: date, txt: str, flavor: str) -> pd.DataFrame:
+    if flavor == "legacy_default":
+        legacy_default_spot_data = parse_spot(txt)
         legacy_default_spot_exec_data = legacy_default_spot_data[
             legacy_default_spot_data["step"] == "Execute"
         ]
 
-        legacy_default_points = extract_athena_points(d, legacy_default_spot_exec_data)
+        return extract_athena_points(d, legacy_default_spot_exec_data)
 
-        result["legacy_default"] = legacy_default_points
-
-    if legacy_fast_txt is not None:
-        legacy_fast_spot_data = parse_spot(legacy_fast_txt)
+    if flavor == "legacy_fast":
+        legacy_fast_spot_data = parse_spot(txt)
         legacy_fast_spot_exec_data = legacy_fast_spot_data[
             legacy_fast_spot_data["step"] == "Execute"
         ]
 
         legacy_fast_points = extract_athena_points(d, legacy_fast_spot_exec_data)
 
-        result["legacy_fast"] = legacy_fast_points
+        return legacy_fast_points
 
-    if acts_default_txt is not None:
-        acts_default_spot_data = parse_spot(acts_default_txt)
+    if flavor == "acts_default":
+        acts_default_spot_data = parse_spot(txt)
         acts_default_spot_exec_data = acts_default_spot_data[
             acts_default_spot_data["step"] == "Execute"
         ]
@@ -212,38 +206,36 @@ def extract_points(d: date, txts: list[str]):
             d, acts_default_spot_exec_data
         )
 
-        result["acts_default"] = acts_default_points
+        return acts_default_points
 
-    if acts_fast_txt is not None:
-        acts_fast_spot_data = parse_spot(acts_fast_txt)
+    if flavor == "acts_fast":
+        acts_fast_spot_data = parse_spot(txt)
         acts_fast_spot_exec_data = acts_fast_spot_data[
             acts_fast_spot_data["step"] == "Execute"
         ]
 
         acts_fast_points = extract_acts_fast_points(d, acts_fast_spot_exec_data)
 
-        result["acts_fast"] = acts_fast_points
+        return acts_fast_points
 
-    return result
+    raise Exception(f"unknown flavor: {flavor}")
 
 
-def extract_all_points(fetch_results, flavors):
-    data_per_algorithm_per_flavor = {flavor: defaultdict(list) for flavor in flavors}
+def extract_all_points(fetch_results: list[tuple[date, str]], flavor: str) -> dict:
+    data_per_algorithm = defaultdict(list)
 
     for d, results in fetch_results:
-        points_per_algorithm_per_flavor = extract_points(d, results)
-        for flavor, points_per_flavor in points_per_algorithm_per_flavor.items():
-            for algorithm, point in points_per_flavor.items():
-                data_per_algorithm_per_flavor[flavor][algorithm].append(point)
+        points_per_algorithm = extract_points(d, results, flavor)
+        for algorithm, point in points_per_algorithm.items():
+            data_per_algorithm[algorithm].append(point)
 
-    for flavor, data_per_algorithm in data_per_algorithm_per_flavor.items():
-        for algorithm in data_per_algorithm:
-            data_per_algorithm[algorithm] = pd.DataFrame(
-                data_per_algorithm[algorithm]
-            ).dropna()
-            d = data_per_algorithm[algorithm]
+    for algorithm in data_per_algorithm:
+        data_per_algorithm[algorithm] = pd.DataFrame(
+            data_per_algorithm[algorithm]
+        ).dropna()
+        d = data_per_algorithm[algorithm]
 
-            d["date"] = pd.to_datetime(d["date"])
-            d.index = d["date"]
+        d["date"] = pd.to_datetime(d["date"])
+        d.index = d["date"]
 
-    return data_per_algorithm_per_flavor
+    return data_per_algorithm
