@@ -1,5 +1,13 @@
+# Ours
 *.png
 *.pdf
+*.csv
+*.root
+*.json
+*.txt
+
+# Others
+
 *~
 *.pyc
 
