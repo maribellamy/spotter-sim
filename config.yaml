@@ -5,13 +5,15 @@ dates:
 flavors:
   legacy_default:
     tag: "tracking"
-    label: "Athena Default Track Finding"
+    label: "Athena Track Finding"
 
     piecewise_const:
       - { start: "2024-02-01", end: "2024-02-23" }
       - { start: "2024-03-01", end: "2024-07-23" }
 
     annotations: []
+
+    compare_to_other: []
 
   legacy_fast:
     tag: "fasttracking"
@@ -23,9 +25,11 @@ flavors:
 
     annotations: []
 
+    compare_to_other: []
+
   acts_default:
     tag: "actstracking"
-    label: "Acts-based Default Track Finding"
+    label: "Acts-based Track Finding"
 
     piecewise_const:
       - { start: "2023-11-01", end: "2023-11-07" }
@@ -50,25 +54,28 @@ flavors:
       - { start: "2024-07-08", end: "2024-07-23" }
 
     annotations:
-      - { date: "2023-11-08", text: "!66631 - Switch ACTS\ntracking to\nAthena backends", alignment: "center", offset: [30, -250] }
-      - { date: "2023-11-13", text: "Potentially more\nEDM related changes\nlike !67034 and/or !66992", alignment: "center", offset: [100, -350] }
-      - { date: "2023-11-24", text: "!66813 - KF on seed", alignment: "center", offset: [50, 30] }
-      - { date: "2023-11-29", text: "!67323 - Aux in MTJ", alignment: "center", offset: [50, 30] }
-      - { date: "2024-02-08", text: "Accidentally\ndeployed fast\ntracking config !67296", alignment: "center", offset: [0, -70] }
-      - { date: "2024-02-15", text: "Restored with !68800", alignment: "center", offset: [60, -200] }
-      - { date: "2024-03-01", text: "Unclear", alignment: "center", offset: [30, 80] }
-      - { date: "2024-03-13", text: "Unclear", alignment: "center", offset: [20, 40] }
-      - { date: "2024-03-18", text: "!69856 - Reduce branching\nfrom 3 to 1", alignment: "center", offset: [-20, -80] }
-      - { date: "2024-04-03", text: "Unclear", alignment: "center", offset: [-70, 40] }
-      - { date: "2024-04-05", text: "!70171 - Extend tracks\nin both directions", alignment: "center", offset: [10, -80] }
-      - { date: "2024-04-13", text: "!70587\nstd::unordered_multimap\ninstead of\nboost::flat_multimap", alignment: "center", offset: [65, 125] }
-      - { date: "2024-04-23", text: "!70375 - ACTS EDM\nbackend during CKF", alignment: "center", offset: [-50, -60] }
-      - { date: "2024-04-30", text: "!70940 - Stop branches\non holes and outliers", alignment: "center", offset: [20, 110] }
-      - { date: "2024-05-17", text: "!71469 - Bare pointers\ninstead of ElementLinks", alignment: "center", offset: [20, 70] }
-      - { date: "2024-05-24", text: "!71683 - Disable\nKF on seeds", alignment: "center", offset: [25, 30] }
-      - { date: "2024-06-05", text: "!71789 - Enable\nanalog clustering", alignment: "center", offset: [25, 30] }
-      - { date: "2024-07-03", text: "!72610 - Faster\nmeasurement\nselector", alignment: "center", offset: [0, 80] }
-      - { date: "2024-07-08", text: "!72881 - Calibrate only\nselected", alignment: "center", offset: [-100, 0] }
+      - { date: "2023-11-08", text: "!66631 - Switch ACTS\ntracking to\nAthena backends", alignment: "center", offset: [30, -250], select: False, label: "" }
+      - { date: "2023-11-13", text: "Potentially more\nEDM related changes\nlike !67034 and/or !66992", alignment: "center", offset: [100, -350], select: False, label: "" }
+      - { date: "2023-11-24", text: "!66813 - KF on seed", alignment: "center", offset: [50, 30], select: False, label: "" }
+      - { date: "2023-11-29", text: "!67323 - Aux in MTJ", alignment: "center", offset: [50, 30], select: False, label: "" }
+      - { date: "2024-02-08", text: "Accidentally\ndeployed fast\ntracking config !67296", alignment: "center", offset: [0, -70], select: False, label: "" }
+      - { date: "2024-02-15", text: "Restored with !68800", alignment: "center", offset: [60, -200], select: True, label: "Ready for optimisation" }
+      - { date: "2024-03-01", text: "Unclear", alignment: "center", offset: [30, 80], select: False, label: "" }
+      - { date: "2024-03-13", text: "Unclear", alignment: "center", offset: [20, 40], select: False, label: "" }
+      - { date: "2024-03-18", text: "!69856 - Reduce branching\nfrom 3 to 1", alignment: "center", offset: [-20, -80], select: True, label: "Reduce branches" }
+      - { date: "2024-04-03", text: "Unclear", alignment: "center", offset: [-70, 40], select: False, label: "" }
+      - { date: "2024-04-05", text: "!70171 - Extend tracks\nin both directions", alignment: "center", offset: [10, -80], select: True, label: "#splitline{Bi-directional}{track extension}" }
+      - { date: "2024-04-13", text: "!70487\nstd::unordered_multimap\ninstead of\nboost::flat_multimap", alignment: "center", offset: [65, 125], select: True, label: "#splitline{Container}{usage optimisation}" }
+      - { date: "2024-04-23", text: "!70375 - ACTS EDM\nbackend during CKF", alignment: "center", offset: [-50, -60], select: True, label: "EDM optimisation" }
+      - { date: "2024-04-30", text: "!70940 - Stop branches\non holes and outliers", alignment: "center", offset: [20, 110], select: True, label: "#splitline{Use of branch}{stoppers}" }
+      - { date: "2024-05-17", text: "!71469 - Bare pointers\ninstead of ElementLinks", alignment: "center", offset: [20, 70], select: True, label: "#splitline{More EDM}{optimisation}" }
+      - { date: "2024-05-24", text: "!71683 - Disable\nKF on seeds", alignment: "center", offset: [25, 30], select: True, label: "#splitline{Disabling fitting}{of seeds}" }
+      - { date: "2024-06-05", text: "!71789 - Enable\nanalog clustering", alignment: "center", offset: [25, 30], select: False, label: "" }
+      - { date: "2024-07-03", text: "!72610 - Faster\nmeasurement\nselector", alignment: "center", offset: [0, 80], select: False, label: "" }
+      - { date: "2024-07-08", text: "!72881 - Calibrate only\nselected", alignment: "center", offset: [-100, 0], select: True, label: "#splitline{Mesurement selector}{optimisation}" }
+
+
+    compare_to_other: ["legacy_default", "2024-07-23"]
 
   acts_fast:
     tag: "actsfasttracking"
@@ -78,3 +85,5 @@ flavors:
       - { start: "2024-07-10", end: "2024-07-23" }
     
     annotations: []
+
+    compare_to_other: []

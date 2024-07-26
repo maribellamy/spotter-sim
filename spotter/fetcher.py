@@ -25,7 +25,7 @@ def get_url(d: date, flavor: str) -> str:
     return f"{base}/{date_str}-{binary}-{job}"
 
 
-def do_fetch(d: date, flavor: str) -> tuple[date, list[None | str]]:
+def do_fetch(d: date, flavor: str) -> tuple[date, list[str]]:
     assert isinstance(flavor, str)
     url: str = get_url(d, flavor)
 
@@ -42,7 +42,7 @@ def do_fetch_all(
     assert isinstance(dates, list)
     assert isinstance(flavors, dict)
 
-    def fetch(d_flavor: tuple[date, tuple[str, str]]) -> tuple[date, str, None | str]:
+    def fetch(d_flavor: tuple[date, tuple[str, str]]) -> tuple[date, str, str]:
         d, (flavor, flavor_tag) = d_flavor
         return d, flavor, do_fetch(d, flavor_tag)
 
