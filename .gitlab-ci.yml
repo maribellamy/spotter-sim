@@ -1,5 +1,5 @@
 lint:
-  image: flake8:latest
+  image: registry.gitlab.com/pipeline-components/flake8:latest
   script:
     - flake8 --verbose --ignore="E501" .
 
