@@ -11,8 +11,6 @@ from matplotlib.dates import date2num
 
 from spotter.fitter import piecewise_const
 from spotter.utilities import date_range
-import ROOT
-
 
 def main():
     parser = argparse.ArgumentParser()
@@ -129,12 +127,15 @@ def main():
     fig.savefig("cpu.png")
     fig.savefig("cpu.pdf")
 
-    ROOT.gROOT.SetStyle("ATLAS")
-
-    canvas = ROOT.TCanvas("canvas", "canvas", 1200, 600)
-    canvas.SetBottomMargin(0.25)
-    canvas.SetLeftMargin(0.12)
-    canvas.SetRightMargin(0.05)
+    useROOT = False
+    canvas = None
+    if useROOT:
+        import ROOT
+        ROOT.gROOT.SetStyle("ATLAS")
+        canvas = ROOT.TCanvas("canvas", "canvas", 1600, 800)
+        canvas.SetBottomMargin(0.30)
+        canvas.SetLeftMargin(0.12)
+        canvas.SetRightMargin(0.05)
 
     for flavor, annotations in annotations_per_flavor.items():
         selected_cpu_values = []
@@ -161,7 +162,7 @@ def main():
                 arrowprops=dict(arrowstyle="-|>"),
             )
 
-        if selected_cpu_values:
+        if useROOT and selected_cpu_values:
             plot = ROOT.TH1D(f"plot_{flavor}", "", len(selected_cpu_values), -0.5, len(selected_cpu_values) - 0.5)
             plot.SetStats(0)
             compare_to_flavor, compare_to_date = config["flavors"][flavor]["compare_to_other"]
@@ -171,15 +172,16 @@ def main():
 
             for bin, (cpu, label) in enumerate(selected_cpu_values):
                 plot.GetXaxis().SetBinLabel(plot.GetXaxis().FindBin(bin), label)
-
                 graph.SetPoint(bin + 2, bin + 0.5, cpu / compare_to_cpu)
+
+            plot.GetXaxis().CenterLabels(1)
 
             graph.SetPoint(0, -0.5, 0)
             graph.SetPoint(1, -0.5, graph.GetPointY(2))
             graph.SetPoint(len(selected_cpu_values) + 2, len(selected_cpu_values) + 0.5, graph.GetPointY(len(selected_cpu_values) + 1))
             graph.SetPoint(len(selected_cpu_values) + 3, len(selected_cpu_values) + 0.5, 0)
             plot.GetXaxis().SetTitle("Work Progress")
-            plot.GetXaxis().SetTitleOffset(2.1)
+            plot.GetXaxis().SetTitleOffset(3.0)
             plot.GetXaxis().SetLabelOffset(0.022)
             plot.GetYaxis().SetTitleOffset(0.9)
 
@@ -188,8 +190,10 @@ def main():
             plot.GetYaxis().SetTitle("#frac{" + config["flavors"][flavor]["label"] + " CPU time }{" + config["flavors"][compare_to_flavor]["label"] + " CPU time}")
 
             graph.SetFillStyle(1001)
-            graph.SetFillColor(ROOT.kPink + 1)
-            graph.SetLineColor(ROOT.kPink + 5)
+            # graph.SetFillColor(ROOT.kPink + 1)
+            # graph.SetLineColor(ROOT.kPink + 5)
+            graph.SetFillColor(ROOT.kAzure - 4)
+            graph.SetLineColor(ROOT.kAzure - 6)
             graph.SetLineWidth(2)
 
             plot.Draw("")
@@ -210,23 +214,18 @@ def main():
             type_of_plot.SetLineWidth(2)
             type_of_plot.Draw()
 
-            dataset = ROOT.TLatex(0.58, 0.78, "HL-LHC, #sqrt{s} = 14 TeV, t#bar{t}, #LT#mu#GT = 200")
-            dataset.SetNDC()
-            dataset.SetTextFont(42)
-            dataset.SetLineWidth(2)
-            dataset.Draw()
-
-            athena = ROOT.TLatex(0.58, 0.71, "Athena (ADD RELEASE)")
-            athena.SetNDC()
-            athena.SetTextFont(42)
-            athena.SetLineWidth(2)
-            athena.Draw()
-
-            acts = ROOT.TLatex(0.58, 0.64, "ACTS (ADD VERSION)")
-            acts.SetNDC()
-            acts.SetTextFont(42)
-            acts.SetLineWidth(2)
-            acts.Draw()
+            text_on_plot = ["HL-LHC, #sqrt{s} = 14 TeV, t#bar{t}, #LT#mu#GT = 200", "starting date: 1 February 2024", "last update: 30 July 2024", "Athena 25.0.11 (ACTS v36.0.0)"]
+            latex_text = []
+            x, y = 0.58, 0.78
+            y_offset = 0.06
+            for line, text in enumerate(text_on_plot):
+                ltext = ROOT.TLatex(x, y-line*y_offset, text)
+                ltext.SetNDC()
+                ltext.SetTextFont(42)
+                ltext.SetTextSize(0.04)
+                ltext.SetLineWidth(2)
+                latex_text.append(ltext)
+                ltext.Draw("same")
 
             line = ROOT.TLine(-0.5, 1, len(selected_cpu_values) + 0.5, 1.)
             line.SetLineColor(ROOT.kBlack)
