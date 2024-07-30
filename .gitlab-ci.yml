@@ -4,7 +4,7 @@ lint:
     - flake8 --verbose --ignore="E501" .
 
 test:
-  image: registry.gitlab.com/pipeline-components/ubuntu:latest
+  image: ubuntu:latest
   script:
     - apt-get update
     - apt-get install -y python3 python3-pip
