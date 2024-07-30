@@ -2,17 +2,18 @@ from datetime import date
 from concurrent.futures import ThreadPoolExecutor
 import urllib.request
 from urllib.error import HTTPError
-import itertools
 import argparse
 from pathlib import Path
-
 import yaml
-
+import pandas as pd
 from spotter.parser import extract_all_points
 from spotter.utilities import date_range
+from spotter.spot_data_config import spot_config, spot_data
 
 
-def get_url(d: date, flavor: str) -> str:
+def get_url(*,
+            d: date,
+            flavor: str) -> str:
     assert isinstance(d, date)
     assert isinstance(flavor, str)
     date_str = d.strftime("%d-%m-%Y")
@@ -25,37 +26,28 @@ def get_url(d: date, flavor: str) -> str:
     return f"{base}/{date_str}-{binary}-{job}"
 
 
-def do_fetch(d: date, flavor: str) -> tuple[date, list[str]]:
-    assert isinstance(flavor, str)
-    url: str = get_url(d, flavor)
+def do_fetch(data: spot_data) -> None:
+    assert isinstance(data, spot_data)
 
-    try:
-        return urllib.request.urlopen(url).read().decode("utf-8")
-    except HTTPError as e:
-        print(d, flavor, url, e)
+    def load(u: str) -> None | str:
+        assert isinstance(u, str)
+        try:
+            return urllib.request.urlopen(u).read().decode("utf-8")
+        except HTTPError as e:
+            print(d, u, e)
         return None
 
+    d: date = data.date
+    for (flavor, config) in data.spot_configs.items():
+        data.addData(flavor=flavor,
+                     data=load(get_url(d=d, flavor=config.tag)))
 
-def do_fetch_all(
-    dates: list[date], flavors: dict[str, str]
-) -> dict[str, list[tuple[date, str]]]:
-    assert isinstance(dates, list)
-    assert isinstance(flavors, dict)
 
-    def fetch(d_flavor: tuple[date, tuple[str, str]]) -> tuple[date, str, str]:
-        d, (flavor, flavor_tag) = d_flavor
-        return d, flavor, do_fetch(d, flavor_tag)
-
+def do_fetch_all(*,
+                 data: list[spot_data]) -> None:
+    assert isinstance(data, list)
     with ThreadPoolExecutor() as tp:
-        results = list(tp.map(fetch, itertools.product(dates, flavors.items())))
-    return {
-        flavor: [
-            (d, result)
-            for d, f, result in results
-            if f == flavor and result is not None
-        ]
-        for flavor in flavors
-    }
+        tp.map(do_fetch, data)
 
 
 def main():
@@ -80,15 +72,26 @@ def main():
     start_date = date.fromisoformat(config["dates"]["start"])
     end_date = date.fromisoformat(config["dates"]["end"])
     date_list = date_range(start_date, end_date)
-    flavors = {
-        flavor: config["flavors"][flavor]["tag"] for flavor in config["flavors"].keys()
-    }
 
-    results_per_flavor = do_fetch_all(dates=date_list, flavors=flavors)
-    data_per_algorithm_per_flavor = {
-        flavor: extract_all_points(results, flavor)
-        for flavor, results in results_per_flavor.items()
-    }
+    flavors: list[str] = list(config["flavors"].keys())
+    step: str = config['step']
+
+    spotConfs: list[spot_config] = []
+    for flavor in flavors:
+        spotConfs.append(spot_config(flavor,
+                                     config['flavors'][flavor]['tag'],
+                                     config['flavors'][flavor]['components']))
+
+    spotData: list[spot_data] = []
+    for d in date_list:
+        data = spot_data(d, step)
+        for conf in spotConfs:
+            data.addSpotConfiguration(spotConfig=conf)
+        spotData.append(data)
+
+    # Fetch the log files
+    do_fetch_all(data=spotData)
+    data_per_algorithm_per_flavor: dict[str, dict[str, dict[str, date | pd.core.frame.DataFrame]]] = extract_all_points(spotData)
 
     for flavor, data_per_algorithm in data_per_algorithm_per_flavor.items():
         for algorithm, data in data_per_algorithm.items():

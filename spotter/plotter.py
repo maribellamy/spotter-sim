@@ -8,11 +8,11 @@ import yaml
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.dates import date2num
-from array import array
 
 from spotter.fitter import piecewise_const
 from spotter.utilities import date_range
 import ROOT
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -95,7 +95,7 @@ def main():
     ax = fig.subplots(1, 1)
 
     for i, (flavor, label) in enumerate(zip(flavors, labels)):
-        color = f"C{i+1}"
+        color = f"C{i + 1}"
 
         ax.plot(
             track_finding_data[flavor]["date"],
@@ -129,27 +129,27 @@ def main():
     fig.savefig("cpu.png")
     fig.savefig("cpu.pdf")
 
-    ROOT.gROOT.SetStyle("ATLAS");
+    ROOT.gROOT.SetStyle("ATLAS")
 
     canvas = ROOT.TCanvas("canvas", "canvas", 1200, 600)
     canvas.SetBottomMargin(0.25)
     canvas.SetLeftMargin(0.12)
     canvas.SetRightMargin(0.05)
 
-
     for flavor, annotations in annotations_per_flavor.items():
-        selected_cpu_values=[]
+        selected_cpu_values = []
         for annotation in annotations:
             d, s, ha, txy, select, label = [annotation[k] for k in ["date", "text", "alignment", "offset", "select", "label"]]
             d = date.fromisoformat(d)
 
             if d not in date_list:
                 continue
-
+            if len(track_finding_data[flavor].loc[d:d]) == 0:
+                continue
             y = track_finding_data[flavor].loc[d:d].cpu.iloc[0]
 
             if select:
-                selected_cpu_values.append([y,label])
+                selected_cpu_values.append([y, label])
 
             t = f"{d:%Y-%m-%d}"
             ax.annotate(
@@ -161,37 +161,35 @@ def main():
                 arrowprops=dict(arrowstyle="-|>"),
             )
 
-
-
         if selected_cpu_values:
-            plot = ROOT.TH1D("plot_"+flavor, "", len(selected_cpu_values), -0.5, len(selected_cpu_values)-0.5)
+            plot = ROOT.TH1D(f"plot_{flavor}", "", len(selected_cpu_values), -0.5, len(selected_cpu_values) - 0.5)
             plot.SetStats(0)
             compare_to_flavor, compare_to_date = config["flavors"][flavor]["compare_to_other"]
             compare_to_cpu = track_finding_data[compare_to_flavor].loc[compare_to_date:compare_to_date].cpu.iloc[0]
 
-            graph = ROOT.TGraph(len(selected_cpu_values)+4)
+            graph = ROOT.TGraph(len(selected_cpu_values) + 4)
 
             for bin, (cpu, label) in enumerate(selected_cpu_values):
-                plot.GetXaxis().SetBinLabel(plot.GetXaxis().FindBin(bin),label)
+                plot.GetXaxis().SetBinLabel(plot.GetXaxis().FindBin(bin), label)
 
-                graph.SetPoint(bin+2, bin+0.5, cpu/compare_to_cpu)
+                graph.SetPoint(bin + 2, bin + 0.5, cpu / compare_to_cpu)
 
             graph.SetPoint(0, -0.5, 0)
             graph.SetPoint(1, -0.5, graph.GetPointY(2))
-            graph.SetPoint(len(selected_cpu_values)+2, len(selected_cpu_values)+0.5, graph.GetPointY(len(selected_cpu_values)+1))
-            graph.SetPoint(len(selected_cpu_values)+3, len(selected_cpu_values)+0.5, 0)
+            graph.SetPoint(len(selected_cpu_values) + 2, len(selected_cpu_values) + 0.5, graph.GetPointY(len(selected_cpu_values) + 1))
+            graph.SetPoint(len(selected_cpu_values) + 3, len(selected_cpu_values) + 0.5, 0)
             plot.GetXaxis().SetTitle("Work Progress")
             plot.GetXaxis().SetTitleOffset(2.1)
             plot.GetXaxis().SetLabelOffset(0.022)
             plot.GetYaxis().SetTitleOffset(0.9)
 
             plot.GetYaxis().SetRangeUser(0.5, 6.5)
-            plot.GetXaxis().SetRangeUser(0.,len(selected_cpu_values)+1)
-            plot.GetYaxis().SetTitle("#frac{"+config["flavors"][flavor]["label"]+" CPU time }{"+config["flavors"][compare_to_flavor]["label"]+" CPU time}")
+            plot.GetXaxis().SetRangeUser(0., len(selected_cpu_values) + 1)
+            plot.GetYaxis().SetTitle("#frac{" + config["flavors"][flavor]["label"] + " CPU time }{" + config["flavors"][compare_to_flavor]["label"] + " CPU time}")
 
             graph.SetFillStyle(1001)
-            graph.SetFillColor(ROOT.kPink+1)
-            graph.SetLineColor(ROOT.kPink+5)
+            graph.SetFillColor(ROOT.kPink + 1)
+            graph.SetLineColor(ROOT.kPink + 5)
             graph.SetLineWidth(2)
 
             plot.Draw("")
@@ -200,38 +198,37 @@ def main():
 
             ROOT.gPad.RedrawAxis()
 
-
-            atlas = ROOT.TLatex(0.58,0.85,"ATLAS");
+            atlas = ROOT.TLatex(0.58, 0.85, "ATLAS")
             atlas.SetNDC()
             atlas.SetTextFont(72)
             atlas.SetLineWidth(2)
             atlas.Draw()
 
-            type_of_plot = ROOT.TLatex(0.7,0.85,"Internal");
+            type_of_plot = ROOT.TLatex(0.7, 0.85, "Internal")
             type_of_plot.SetNDC()
             type_of_plot.SetTextFont(42)
             type_of_plot.SetLineWidth(2)
             type_of_plot.Draw()
 
-            dataset = ROOT.TLatex(0.58,0.78,"HL-LHC, #sqrt{s} = 14 TeV, t#bar{t}, #LT#mu#GT = 200");
+            dataset = ROOT.TLatex(0.58, 0.78, "HL-LHC, #sqrt{s} = 14 TeV, t#bar{t}, #LT#mu#GT = 200")
             dataset.SetNDC()
             dataset.SetTextFont(42)
             dataset.SetLineWidth(2)
             dataset.Draw()
 
-            athena = ROOT.TLatex(0.58,0.71,"Athena (ADD RELEASE)");
+            athena = ROOT.TLatex(0.58, 0.71, "Athena (ADD RELEASE)")
             athena.SetNDC()
             athena.SetTextFont(42)
             athena.SetLineWidth(2)
             athena.Draw()
 
-            acts = ROOT.TLatex(0.58,0.64,"ACTS (ADD VERSION)");
+            acts = ROOT.TLatex(0.58, 0.64, "ACTS (ADD VERSION)")
             acts.SetNDC()
             acts.SetTextFont(42)
             acts.SetLineWidth(2)
             acts.Draw()
 
-            line = ROOT.TLine(-0.5, 1, len(selected_cpu_values)+0.5, 1.)
+            line = ROOT.TLine(-0.5, 1, len(selected_cpu_values) + 0.5, 1.)
             line.SetLineColor(ROOT.kBlack)
             line.SetLineStyle(3)
             line.SetLineWidth(2)
@@ -248,7 +245,7 @@ def main():
     ax = fig.subplots(1, 1)
 
     for i, (flavor, label) in enumerate(zip(flavors, labels)):
-        color = f"C{i+1}"
+        color = f"C{i + 1}"
 
         ax.plot(
             track_finding_data[flavor]["date"],

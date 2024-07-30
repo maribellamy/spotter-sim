@@ -1,0 +1,67 @@
+dates:
+  start: "2024-03-01"
+  end: "2024-07-25"
+
+step: "Execute"
+
+flavors:
+  legacy_pixel:
+    tag: "tracking"
+    label: "Athena Pixel Clusterization"
+    components: 
+      - "ITkPixelClusterization"
+
+    piecewise_const:
+      - { start: "2023-07-09", end: "2024-02-29" }
+      - { start: "2024-03-01", end: "2024-07-25" }
+    annotations: []
+    compare_to_other: []
+    
+  legacy_strip:
+    tag: "tracking"
+    label: "Athena Strip Clusterization"
+    components: 
+      - "ITkStripClusterization"
+
+    piecewise_const:
+      - { start: "2023-07-09", end: "2024-02-29" }
+      - { start: "2024-03-01", end: "2024-07-25" }
+    annotations: []
+    compare_to_other: []
+    
+  acts_pixel:
+    tag: "actstracking"
+    label: "ACTS Pixel Clusterization"
+    components:
+      - "ActsPixelClusterizationAlg"
+      - "ActsBenchmarkSpotPixelClusterizationAlg"
+      - "ActsTrkITkPixelClusterizationAlg"
+
+    piecewise_const:
+      - { start: "2023-07-09", end: "2024-02-29" }
+      - { start: "2024-03-01", end: "2024-03-04" }
+      - { start: "2024-03-05", end: "2024-05-13" }
+      - { start: "2024-05-14", end: "2024-07-27" }
+      
+    annotations:
+      - { date: "2024-05-15", text: "!71336 - Only use ACTS\nin SPOT workflow", alignment: "center", offset: [30, -50], select: False, label: "" }
+
+    compare_to_other: []
+      
+  acts_strip:
+    tag: "actstracking"
+    label: "ACTS Strip Clusterization"
+    components:
+      - "ActsStripClusterizationAlg"
+      - "ActsBenchmarkSpotStripClusterizationAlg"
+      - "ActsTrkITkStripClusterizationAlg"
+
+    piecewise_const:
+      - { start: "2023-07-09", end: "2023-10-16" }
+      - { start: "2023-10-17", end: "2024-02-29" }
+      - { start: "2024-03-01", end: "2024-03-04" }
+      - { start: "2024-03-05", end: "2024-07-25" }
+ 
+    annotations:
+      - { date: "2023-10-17", text: "Not explained", alignment: "center", offset: [30, 250], select: False, label: "" }
+    compare_to_other: []
