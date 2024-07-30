@@ -11,9 +11,7 @@ from spotter.utilities import date_range
 from spotter.spot_data_config import spot_config, spot_data
 
 
-def get_url(*,
-            d: date,
-            flavor: str) -> str:
+def get_url(*, d: date, flavor: str) -> str:
     assert isinstance(d, date)
     assert isinstance(flavor, str)
     date_str = d.strftime("%d-%m-%Y")
@@ -38,13 +36,11 @@ def do_fetch(data: spot_data) -> None:
         return None
 
     d: date = data.date
-    for (flavor, config) in data.spot_configs.items():
-        data.addData(flavor=flavor,
-                     data=load(get_url(d=d, flavor=config.tag)))
+    for flavor, config in data.spot_configs.items():
+        data.addData(flavor=flavor, data=load(get_url(d=d, flavor=config.tag)))
 
 
-def do_fetch_all(*,
-                 data: list[spot_data]) -> None:
+def do_fetch_all(*, data: list[spot_data]) -> None:
     assert isinstance(data, list)
     with ThreadPoolExecutor() as tp:
         tp.map(do_fetch, data)
@@ -74,13 +70,17 @@ def main():
     date_list = date_range(start_date, end_date)
 
     flavors: list[str] = list(config["flavors"].keys())
-    step: str = config['step']
+    step: str = config["step"]
 
     spotConfs: list[spot_config] = []
     for flavor in flavors:
-        spotConfs.append(spot_config(flavor,
-                                     config['flavors'][flavor]['tag'],
-                                     config['flavors'][flavor]['components']))
+        spotConfs.append(
+            spot_config(
+                flavor,
+                config["flavors"][flavor]["tag"],
+                config["flavors"][flavor]["components"],
+            )
+        )
 
     spotData: list[spot_data] = []
     for d in date_list:
@@ -91,7 +91,11 @@ def main():
 
     # Fetch the log files
     do_fetch_all(data=spotData)
-    data_per_algorithm_per_flavor: dict[str, dict[str, dict[str, date | pd.core.frame.DataFrame]]] = extract_all_points(spotData)
+    data_per_algorithm_per_flavor: dict[
+        str, dict[str, dict[str, date | pd.core.frame.DataFrame]]
+    ] = extract_all_points(spotData)
+
+    args.data_dir.mkdir(parents=True, exist_ok=True)
 
     for flavor, data_per_algorithm in data_per_algorithm_per_flavor.items():
         for algorithm, data in data_per_algorithm.items():

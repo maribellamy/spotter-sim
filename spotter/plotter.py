@@ -28,6 +28,12 @@ def main():
         default="data",
         help="Directory to store the data",
     )
+    parser.add_argument(
+        "--plots-dir",
+        type=Path,
+        default="plots",
+        help="Directory to store the plots",
+    )
     args = parser.parse_args()
 
     with open(args.config, "r") as f:
@@ -89,6 +95,8 @@ def main():
         for flavor in flavors
     }
 
+    args.plots_dir.mkdir(parents=True, exist_ok=True)
+
     # plot cpu
 
     fig = plt.figure(figsize=(16, 9), dpi=200)
@@ -126,8 +134,8 @@ def main():
 
     ax.legend()
 
-    fig.savefig("cpu.png")
-    fig.savefig("cpu.pdf")
+    fig.savefig(args.plots_dir / "cpu.png")
+    fig.savefig(args.plots_dir / "cpu.pdf")
 
     ROOT.gROOT.SetStyle("ATLAS")
 
@@ -139,7 +147,10 @@ def main():
     for flavor, annotations in annotations_per_flavor.items():
         selected_cpu_values = []
         for annotation in annotations:
-            d, s, ha, txy, select, label = [annotation[k] for k in ["date", "text", "alignment", "offset", "select", "label"]]
+            d, s, ha, txy, select, label = [
+                annotation[k]
+                for k in ["date", "text", "alignment", "offset", "select", "label"]
+            ]
             d = date.fromisoformat(d)
 
             if d not in date_list:
@@ -162,10 +173,22 @@ def main():
             )
 
         if selected_cpu_values:
-            plot = ROOT.TH1D(f"plot_{flavor}", "", len(selected_cpu_values), -0.5, len(selected_cpu_values) - 0.5)
+            plot = ROOT.TH1D(
+                f"plot_{flavor}",
+                "",
+                len(selected_cpu_values),
+                -0.5,
+                len(selected_cpu_values) - 0.5,
+            )
             plot.SetStats(0)
-            compare_to_flavor, compare_to_date = config["flavors"][flavor]["compare_to_other"]
-            compare_to_cpu = track_finding_data[compare_to_flavor].loc[compare_to_date:compare_to_date].cpu.iloc[0]
+            compare_to_flavor, compare_to_date = config["flavors"][flavor][
+                "compare_to_other"
+            ]
+            compare_to_cpu = (
+                track_finding_data[compare_to_flavor]
+                .loc[compare_to_date:compare_to_date]
+                .cpu.iloc[0]
+            )
 
             graph = ROOT.TGraph(len(selected_cpu_values) + 4)
 
@@ -176,16 +199,28 @@ def main():
 
             graph.SetPoint(0, -0.5, 0)
             graph.SetPoint(1, -0.5, graph.GetPointY(2))
-            graph.SetPoint(len(selected_cpu_values) + 2, len(selected_cpu_values) + 0.5, graph.GetPointY(len(selected_cpu_values) + 1))
-            graph.SetPoint(len(selected_cpu_values) + 3, len(selected_cpu_values) + 0.5, 0)
+            graph.SetPoint(
+                len(selected_cpu_values) + 2,
+                len(selected_cpu_values) + 0.5,
+                graph.GetPointY(len(selected_cpu_values) + 1),
+            )
+            graph.SetPoint(
+                len(selected_cpu_values) + 3, len(selected_cpu_values) + 0.5, 0
+            )
             plot.GetXaxis().SetTitle("Work Progress")
             plot.GetXaxis().SetTitleOffset(2.1)
             plot.GetXaxis().SetLabelOffset(0.022)
             plot.GetYaxis().SetTitleOffset(0.9)
 
             plot.GetYaxis().SetRangeUser(0.5, 6.5)
-            plot.GetXaxis().SetRangeUser(0., len(selected_cpu_values) + 1)
-            plot.GetYaxis().SetTitle("#frac{" + config["flavors"][flavor]["label"] + " CPU time }{" + config["flavors"][compare_to_flavor]["label"] + " CPU time}")
+            plot.GetXaxis().SetRangeUser(0.0, len(selected_cpu_values) + 1)
+            plot.GetYaxis().SetTitle(
+                "#frac{"
+                + config["flavors"][flavor]["label"]
+                + " CPU time }{"
+                + config["flavors"][compare_to_flavor]["label"]
+                + " CPU time}"
+            )
 
             graph.SetFillStyle(1001)
             graph.SetFillColor(ROOT.kPink + 1)
@@ -210,7 +245,9 @@ def main():
             type_of_plot.SetLineWidth(2)
             type_of_plot.Draw()
 
-            dataset = ROOT.TLatex(0.58, 0.78, "HL-LHC, #sqrt{s} = 14 TeV, t#bar{t}, #LT#mu#GT = 200")
+            dataset = ROOT.TLatex(
+                0.58, 0.78, "HL-LHC, #sqrt{s} = 14 TeV, t#bar{t}, #LT#mu#GT = 200"
+            )
             dataset.SetNDC()
             dataset.SetTextFont(42)
             dataset.SetLineWidth(2)
@@ -228,16 +265,16 @@ def main():
             acts.SetLineWidth(2)
             acts.Draw()
 
-            line = ROOT.TLine(-0.5, 1, len(selected_cpu_values) + 0.5, 1.)
+            line = ROOT.TLine(-0.5, 1, len(selected_cpu_values) + 0.5, 1.0)
             line.SetLineColor(ROOT.kBlack)
             line.SetLineStyle(3)
             line.SetLineWidth(2)
             line.Draw()
 
-            canvas.SaveAs("CPU_acts_athena_progress.png")
+            canvas.SaveAs(str(args.plots_dir / "CPU_acts_athena_progress.png"))
 
-    fig.savefig("cpu_annotated.png")
-    fig.savefig("cpu_annotated.pdf")
+    fig.savefig(args.plots_dir / "cpu_annotated.png")
+    fig.savefig(args.plots_dir / "cpu_annotated.pdf")
 
     # plot memory allocation
 
@@ -261,8 +298,8 @@ def main():
 
     ax.legend()
 
-    fig.savefig("mem.png")
-    fig.savefig("mem.pdf")
+    fig.savefig(args.plots_dir / "mem.png")
+    fig.savefig(args.plots_dir / "mem.pdf")
 
 
 if __name__ == "__main__":

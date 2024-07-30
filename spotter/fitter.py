@@ -1,9 +1,9 @@
 import pandas as pd
 
 
-def piecewise_const(x: pd.core.series.Series,
-                    y: pd.core.series.Series,
-                    edges: list) -> tuple[list[float]]:
+def piecewise_const(
+    x: pd.core.series.Series, y: pd.core.series.Series, edges: list
+) -> tuple[list[float]]:
     result_x = []
     result_y = []
 
