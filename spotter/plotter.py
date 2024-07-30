@@ -28,6 +28,12 @@ def main():
         default="data",
         help="Directory to store the data",
     )
+    parser.add_argument(
+        "--plots-dir",
+        type=Path,
+        default="plots",
+        help="Directory to store the plots",
+    )
     args = parser.parse_args()
 
     with open(args.config, "r") as f:
@@ -126,8 +132,8 @@ def main():
 
     ax.legend()
 
-    fig.savefig("cpu.png")
-    fig.savefig("cpu.pdf")
+    fig.savefig(args.plots_dir / "cpu.png")
+    fig.savefig(args.plots_dir / "cpu.pdf")
 
     ROOT.gROOT.SetStyle("ATLAS")
 
@@ -236,8 +242,8 @@ def main():
 
             canvas.SaveAs("CPU_acts_athena_progress.png")
 
-    fig.savefig("cpu_annotated.png")
-    fig.savefig("cpu_annotated.pdf")
+    fig.savefig(args.plots_dir / "cpu_annotated.png")
+    fig.savefig(args.plots_dir / "cpu_annotated.pdf")
 
     # plot memory allocation
 
@@ -261,8 +267,8 @@ def main():
 
     ax.legend()
 
-    fig.savefig("mem.png")
-    fig.savefig("mem.pdf")
+    fig.savefig(args.plots_dir / "mem.png")
+    fig.savefig(args.plots_dir / "mem.pdf")
 
 
 if __name__ == "__main__":
