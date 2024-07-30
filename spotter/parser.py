@@ -26,8 +26,9 @@ def parse_spot(txt: str) -> pd.core.frame.DataFrame:
     return result
 
 
-def sum_two_points(a: dict[str, date | float],
-                   b: dict[str, date | float]) -> dict[str, date | float]:
+def sum_two_points(
+    a: dict[str, date | float], b: dict[str, date | float]
+) -> dict[str, date | float]:
     assert isinstance(a, dict)
     assert isinstance(b, dict)
     assert a["date"] == b["date"]
@@ -39,8 +40,7 @@ def sum_two_points(a: dict[str, date | float],
     }
 
 
-def convert_point(d: date,
-                  p: pd.core.frame.DataFrame) -> dict[str, date | float]:
+def convert_point(d: date, p: pd.core.frame.DataFrame) -> dict[str, date | float]:
     assert isinstance(d, date)
     assert isinstance(p, pd.core.frame.DataFrame)
 
@@ -70,8 +70,9 @@ def null_point(d: date) -> dict[str, date | None]:
     }
 
 
-def extract_components(data: pd.core.frame.DataFrame,
-                       components: list[str]) -> pd.core.frame.DataFrame:
+def extract_components(
+    data: pd.core.frame.DataFrame, components: list[str]
+) -> pd.core.frame.DataFrame:
     assert isinstance(data, pd.core.frame.DataFrame)
     assert isinstance(components, list)
     assert len(components) != 0 and isinstance(components[0], str)
@@ -82,15 +83,17 @@ def extract_components(data: pd.core.frame.DataFrame,
     return output
 
 
-def extract(d: date,
-            data: pd.core.frame.DataFrame,
-            components: list[str]) -> dict[str, dict[str, date | float | None]]:
+def extract(
+    d: date, data: pd.core.frame.DataFrame, components: list[str]
+) -> dict[str, dict[str, date | float | None]]:
     assert isinstance(d, date)
     assert isinstance(data, pd.core.frame.DataFrame)
     assert isinstance(components, list)
     assert len(components) != 0 and isinstance(components[0], str)
 
-    track_point: dict[str, date | float] = convert_point(d, extract_components(data, components))
+    track_point: dict[str, date | float] = convert_point(
+        d, extract_components(data, components)
+    )
     return {
         "track_finding": track_point,
     }
@@ -100,7 +103,7 @@ def extract_points(data: spot_data) -> dict[str, str | None]:
     assert isinstance(data, spot_data)
 
     result = dict()
-    for (flavor, logText) in data.data.items():
+    for flavor, logText in data.data.items():
         if logText is None:
             continue
         # Take the summary
@@ -121,7 +124,9 @@ def extract_points(data: spot_data) -> dict[str, str | None]:
     return result
 
 
-def extract_all_points(data: list[spot_data]) -> dict[str, dict[str, dict[str, date | pd.core.frame.DataFrame]]]:
+def extract_all_points(
+    data: list[spot_data],
+) -> dict[str, dict[str, dict[str, date | pd.core.frame.DataFrame]]]:
     assert isinstance(data, list)
 
     flavors = data[0].data.keys()
