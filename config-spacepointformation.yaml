@@ -1,0 +1,32 @@
+dates:
+  start: "2023-01-01"
+  end: "2024-07-25"
+
+step: "Execute"
+
+flavors:
+  legacy_spacepoint_formation:
+    tag: "tracking"
+    label: "Athena Space Point Formation"
+    components: 
+      - "ITkSiTrackerSpacePointFinder"
+
+    piecewise_const: []
+    annotations: []
+
+  acts_spacepoint_formation:
+    tag: "actstracking"
+    label: "ACTS Space Point Formation"
+    components:
+      - "ActsPixelSpacePointFormationAlg"
+      - "ActsStripSpacePointFormationAlg"
+      - "ActsTrkPixelSpacePointFormation"
+      - "ActsTrkStripSpacePointFormation"
+      - "ActsPixelSpacePointFormation"
+      - "ActsStripSpacePointFormation"
+      - "ActsBenchmarkSpotPixelSpacePointFormationAlg"
+      - "ActsBenchmarkSpotStripSpacePointFormationAlg"
+
+    piecewise_const: []
+    annotations: []
+
