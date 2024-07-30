@@ -20,7 +20,7 @@ test:
     - pip3 install -r requirements.txt
 
     # install root
-    - apt-get install -y wget
+    - apt-get install -y wget libtbb-dev
     - wget https://root.cern/download/root_v6.32.02.Linux-ubuntu24.04-x86_64-gcc13.2.tar.gz
     - tar -xzvf root_v6.32.02.Linux-ubuntu24.04-x86_64-gcc13.2.tar.gz
     - rm root_v6.32.02.Linux-ubuntu24.04-x86_64-gcc13.2.tar.gz
