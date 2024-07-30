@@ -4,7 +4,7 @@ lint:
     - flake8 --verbose --ignore="E501" .
 
 test:
-  image: ubuntu:latest
+  image: ubuntu:24.04
   artifacts:
     paths:
       - data
