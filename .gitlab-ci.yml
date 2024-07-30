@@ -12,9 +12,20 @@ test:
     expire_in: 1 week
   script:
     - apt-get update
+
+    # install python and dependencies
     - apt-get install -y python3 python3-pip python3-venv
     - python3 -m venv venv
     - source venv/bin/activate
     - pip3 install -r requirements.txt
+
+    # install root
+    - apt-get install -y wget
+    - wget https://root.cern/download/root_v6.32.02.Linux-ubuntu24.04-x86_64-gcc13.2.tar.gz
+    - tar -xzvf root_v6.32.02.Linux-ubuntu24.04-x86_64-gcc13.2.tar.gz
+    - rm root_v6.32.02.Linux-ubuntu24.04-x86_64-gcc13.2.tar.gz
+    - source root/bin/thisroot.sh
+
+    # run fetching and plotting
     - python3 -m spotter.fetcher
     - python3 -m spotter.plotter
