@@ -1,7 +1,7 @@
 lint:
   image: registry.gitlab.com/pipeline-components/flake8:latest
   script:
-    - flake8 --verbose --ignore="E501" .
+    - flake8 --verbose --ignore="E501" --ignore="W503" .
 
 test:
   image: ubuntu:24.04
