@@ -78,10 +78,10 @@ flavors:
       - { date: "2024-03-18", text: "!69856 - Reduce branching\nfrom 3 to 1", alignment: "center", offset: [-20, -80], select: True, label: "Reduce branches" }
       - { date: "2024-04-03", text: "Unclear", alignment: "center", offset: [-70, 40], select: False, label: "" }
       - { date: "2024-04-05", text: "!70171 - Extend tracks\nin both directions", alignment: "center", offset: [10, -80], select: True, label: "Bi-directional track finding" }
-      - { date: "2024-04-13", text: "!70487\nstd::unordered_multimap\ninstead of\nboost::flat_multimap", alignment: "center", offset: [65, 125], select: True, label: "Container usage optimisation" }
-      - { date: "2024-04-23", text: "!70375 - ACTS EDM\nbackend during CKF", alignment: "center", offset: [-50, -60], select: True, label: "EDM optimisation" }
+      - { date: "2024-04-13", text: "!70487\nstd::unordered_multimap\ninstead of\nboost::flat_multimap", alignment: "center", offset: [65, 125], select: True, label: "EDM optimisation (I)" }
+      - { date: "2024-04-23", text: "!70375 - ACTS EDM\nbackend during CKF", alignment: "center", offset: [-50, -60], select: True, label: "EDM optimisation (II)" }
       - { date: "2024-04-30", text: "!70940 - Stop branches\non holes and outliers", alignment: "center", offset: [20, 110], select: True, label: "Use of branch stoppers" }
-      - { date: "2024-05-17", text: "!71469 - Bare pointers\ninstead of ElementLinks", alignment: "center", offset: [20, 70], select: True, label: "More EDM optimisation" }
+      - { date: "2024-05-17", text: "!71469 - Bare pointers\ninstead of ElementLinks", alignment: "center", offset: [20, 70], select: True, label: "EDM optimisation (III)" }
       - { date: "2024-05-24", text: "!71683 - Disable\nKF on seeds", alignment: "center", offset: [25, 30], select: True, label: "Disabling fitting of seeds" }
       - { date: "2024-06-05", text: "!71789 - Enable\nanalog clustering", alignment: "center", offset: [25, 30], select: False, label: "" }
       - { date: "2024-07-03", text: "!72610 - Faster\nmeasurement\nselector", alignment: "center", offset: [0, 80], select: False, label: "" }
