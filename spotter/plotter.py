@@ -215,6 +215,7 @@ def main():
             plot.GetXaxis().SetTitleOffset(3.0)
             plot.GetXaxis().SetLabelOffset(0.022)
             plot.GetYaxis().SetTitleOffset(0.9)
+            plot.GetYaxis().SetTitleSize(0.04)
 
 
             plot.GetYaxis().SetRangeUser(0.5, 6.5)
@@ -222,9 +223,9 @@ def main():
             plot.GetYaxis().SetTitle(
                 "#frac{"
                 + config["flavors"][flavor]["label"]
-                + " CPU time }{"
+                + " CPU time per event}{"
                 + config["flavors"][compare_to_flavor]["label"]
-                + " CPU time}"
+                + " CPU time per event}"
             )
 
             graph.SetFillStyle(1001)
@@ -255,7 +256,7 @@ def main():
             text_on_plot = ["HL-LHC, #sqrt{s} = 14 TeV, t#bar{t}, #LT#mu#GT = 200",
                             "starting date: 1 February 2024",
                             "last update: 30 July 2024",
-                            "Athena 25.0.11 (ACTS v36.0.0)"]
+                            "Athena 25.0.11 (Acts v36.0.0)"]
             latex_text = []
             x, y = 0.58, 0.78
             y_offset = 0.06
