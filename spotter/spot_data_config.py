@@ -1,7 +1,7 @@
 from datetime import date
 
 
-class spot_config:
+class SpotConfig:
     def __init__(self, flavor: str, tag: str, components: list[str]) -> None:
         assert isinstance(flavor, str)
         assert isinstance(tag, str)
@@ -18,13 +18,13 @@ class spot_config:
         return self.__str__()
 
 
-class spot_data:
+class SpotData:
     def __init__(self, d: date, step: str) -> None:
         assert isinstance(d, date)
         assert isinstance(step, str)
         self.date: date = d
         self.step: str = step
-        self.spot_configs: dict[str, spot_config] = dict()
+        self.spot_configs: dict[str, SpotConfig] = dict()
         self.data: dict[str, str | None] = dict()
 
     def __str__(self) -> str:
@@ -35,8 +35,8 @@ class spot_data:
     def __repr__(self) -> str:
         return self.__str__()
 
-    def addSpotConfiguration(self, *, spotConfig: spot_config) -> None:
-        assert isinstance(spotConfig, spot_config)
+    def addSpotConfiguration(self, *, spotConfig: SpotConfig) -> None:
+        assert isinstance(spotConfig, SpotConfig)
         assert self.spot_configs.get(spotConfig.flavor, None) is None
         self.spot_configs[spotConfig.flavor] = spotConfig
 

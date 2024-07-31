@@ -2,11 +2,8 @@ dates:
   start: "2023-01-01"
   end: "2024-07-25"
 
-step: "Execute"
-
 flavors:
-  legacy_spacepoint_formation:
-    tag: "tracking"
+  legacy_default:
     label: "Athena Space Point Formation"
     components: 
       - "ITkSiTrackerSpacePointFinder"
@@ -14,8 +11,7 @@ flavors:
     piecewise_const: []
     annotations: []
 
-  acts_spacepoint_formation:
-    tag: "actstracking"
+  acts_default:
     label: "ACTS Space Point Formation"
     components:
       - "ActsPixelSpacePointFormationAlg"
@@ -29,4 +25,3 @@ flavors:
 
     piecewise_const: []
     annotations: []
-

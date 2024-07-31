@@ -2,11 +2,8 @@ dates:
   start: "2024-03-01"
   end: "2024-07-25"
 
-step: "Execute"
-
 flavors:
-  legacy_pixel:
-    tag: "tracking"
+  legacy_default:
     label: "Athena Pixel Clusterization"
     components: 
       - "ITkPixelClusterization"
@@ -17,8 +14,7 @@ flavors:
     annotations: []
     compare_to_other: []
     
-  legacy_strip:
-    tag: "tracking"
+  legacy_fast:
     label: "Athena Strip Clusterization"
     components: 
       - "ITkStripClusterization"
@@ -29,8 +25,7 @@ flavors:
     annotations: []
     compare_to_other: []
     
-  acts_pixel:
-    tag: "actstracking"
+  acts_default:
     label: "ACTS Pixel Clusterization"
     components:
       - "ActsPixelClusterizationAlg"
@@ -47,9 +42,8 @@ flavors:
       - { date: "2024-05-15", text: "!71336 - Only use ACTS\nin SPOT workflow", alignment: "center", offset: [30, -50], select: False, label: "" }
 
     compare_to_other: []
-      
-  acts_strip:
-    tag: "actstracking"
+
+  acts_fast:
     label: "ACTS Strip Clusterization"
     components:
       - "ActsStripClusterizationAlg"

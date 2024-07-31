@@ -8,7 +8,7 @@ import yaml
 import pandas as pd
 from spotter.parser import extract_all_points
 from spotter.utilities import date_range
-from spotter.spot_data_config import spot_config, spot_data
+from spotter.spot_data_config import SpotConfig, SpotData
 
 
 def get_url(*, d: date, flavor: str) -> str:
@@ -24,8 +24,8 @@ def get_url(*, d: date, flavor: str) -> str:
     return f"{base}/{date_str}-{binary}-{job}"
 
 
-def do_fetch(data: spot_data) -> None:
-    assert isinstance(data, spot_data)
+def do_fetch(data: SpotData) -> None:
+    assert isinstance(data, SpotData)
 
     def load(u: str) -> None | str:
         assert isinstance(u, str)
@@ -40,7 +40,7 @@ def do_fetch(data: spot_data) -> None:
         data.addData(flavor=flavor, data=load(get_url(d=d, flavor=config.tag)))
 
 
-def do_fetch_all(*, data: list[spot_data]) -> None:
+def do_fetch_all(*, data: list[SpotData]) -> None:
     assert isinstance(data, list)
     with ThreadPoolExecutor() as tp:
         tp.map(do_fetch, data)
@@ -51,7 +51,7 @@ def main():
     parser.add_argument(
         "--config",
         type=str,
-        default="config.yaml",
+        default="config/fetcher.yaml",
         help="Path to the configuration file",
     )
     parser.add_argument(
@@ -72,19 +72,19 @@ def main():
     flavors: list[str] = list(config["flavors"].keys())
     step: str = config["step"]
 
-    spotConfs: list[spot_config] = []
+    spotConfs: list[SpotConfig] = []
     for flavor in flavors:
         spotConfs.append(
-            spot_config(
+            SpotConfig(
                 flavor,
                 config["flavors"][flavor]["tag"],
                 config["flavors"][flavor]["components"],
             )
         )
 
-    spotData: list[spot_data] = []
+    spotData: list[SpotData] = []
     for d in date_list:
-        data = spot_data(d, step)
+        data = SpotData(d, step)
         for conf in spotConfs:
             data.addSpotConfiguration(spotConfig=conf)
         spotData.append(data)

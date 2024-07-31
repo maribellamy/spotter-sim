@@ -1,0 +1,36 @@
+dates:
+  start: "2023-01-01"
+  end: "2024-07-29"
+
+step: "Execute"
+
+flavors:
+  legacy_default:
+    tag: "tracking"
+    components: 
+      - "ITkSiSpTrackFinder"
+
+  legacy_fast:
+    tag: "fasttracking"
+    components:
+      - "ITkSiSpTrackFinder"
+
+  acts_default:
+    tag: "actstracking"
+    components:
+      - "ActsTrackFindingAlg"
+      - "ActsBenchmarkSpotTrackFindingAlg"
+      - "ActsPixelSeedingAlg"
+      - "ActsBenchmarkSpotPixelSeedingAlg"
+      - "ActsStripSeedingAlg"
+      - "ActsBenchmarkSpotStripSeedingAlg"
+
+  acts_fast:
+    tag: "actsfasttracking"
+    components:
+      - "ActsTrackFindingAlg"
+      - "ActsBenchmarkSpotTrackFindingAlg"
+      - "ActsPixelSeedingAlg"
+      - "ActsBenchmarkSpotPixelSeedingAlg"
+      - "ActsStripSeedingAlg"
+      - "ActsBenchmarkSpotStripSeedingAlg"
