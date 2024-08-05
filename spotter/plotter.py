@@ -41,9 +41,7 @@ def main():
     start_date = date.fromisoformat(config["dates"]["start"])
     end_date = date.fromisoformat(config["dates"]["end"])
     date_list = date_range(start_date, end_date)
-    flavors = {
-        flavor: config["flavors"][flavor]["tag"] for flavor in config["flavors"].keys()
-    }
+    flavors = list(config["flavors"].keys())
     labels = [config["flavors"][flavor]["label"] for flavor in flavors]
     annotations_per_flavor = {
         flavor: config["flavors"][flavor]["annotations"] for flavor in flavors

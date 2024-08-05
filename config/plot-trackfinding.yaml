@@ -14,6 +14,8 @@ flavors:
 
     annotations: []
 
+    compare_to_other: []
+
   legacy_fast:
     label: "Athena Fast Tracking"
     components:
@@ -24,6 +26,8 @@ flavors:
       - { start: "2024-03-01", end: "2024-07-28" }
       
     annotations: []
+
+    compare_to_other: []
 
   acts_default:
     label: "Acts-based"
@@ -77,6 +81,8 @@ flavors:
       - { date: "2024-06-05", text: "!71789 - Enable\nanalog clustering", alignment: "center", offset: [25, 30], select: False, label: "" }
       - { date: "2024-07-03", text: "!72610 - Faster\nmeasurement\nselector", alignment: "center", offset: [0, 80], select: False, label: "" }
       - { date: "2024-07-08", text: "!72881 - Calibrate only\nselected", alignment: "center", offset: [-100, 0], select: True, label: "#splitline{Measurement selector}{    optimisation}" }
+    
+    compare_to_other: ["legacy_default", "2024-07-28"]
 
   acts_fast:
     label: "Acts-based Fast Tracking"
@@ -92,3 +98,5 @@ flavors:
       - { start: "2024-07-10", end: "2024-07-28" }
     
     annotations: []
+
+    compare_to_other: []
