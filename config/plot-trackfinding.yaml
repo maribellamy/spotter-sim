@@ -2,14 +2,9 @@ dates:
   start: "2024-02-01"
   end: "2024-07-28"
 
-step: "Execute"
-
 flavors:
   legacy_default:
-    tag: "tracking"
     label: "current"
-    components: 
-      - "ITkSiSpTrackFinder"
 
     piecewise_const:
       - { start: "2024-02-01", end: "2024-02-23" }
@@ -20,10 +15,7 @@ flavors:
     compare_to_other: []
 
   legacy_fast:
-    tag: "fasttracking"
     label: "Athena Fast Tracking"
-    components:
-      - "ITkSiSpTrackFinder"
 
     piecewise_const:
       - { start: "2024-02-01", end: "2024-02-23" }
@@ -34,15 +26,7 @@ flavors:
     compare_to_other: []
 
   acts_default:
-    tag: "actstracking"
     label: "Acts-based"
-    components:
-      - "ActsTrackFindingAlg"
-      - "ActsBenchmarkSpotTrackFindingAlg"
-      - "ActsPixelSeedingAlg"
-      - "ActsBenchmarkSpotPixelSeedingAlg"
-      - "ActsStripSeedingAlg"
-      - "ActsBenchmarkSpotStripSeedingAlg"
 
     piecewise_const:
       - { start: "2023-11-01", end: "2023-11-07" }
@@ -86,20 +70,11 @@ flavors:
       - { date: "2024-06-05", text: "!71789 - Enable\nanalog clustering", alignment: "center", offset: [25, 30], select: False, label: "" }
       - { date: "2024-07-03", text: "!72610 - Faster\nmeasurement\nselector", alignment: "center", offset: [0, 80], select: False, label: "" }
       - { date: "2024-07-08", text: "!72881 - Calibrate only\nselected", alignment: "center", offset: [-100, 0], select: True, label: "#splitline{Measurement selector}{    optimisation}" }
-
-
+    
     compare_to_other: ["legacy_default", "2024-07-28"]
 
   acts_fast:
-    tag: "actsfasttracking"
     label: "Acts-based Fast Tracking"
-    components:
-      - "ActsTrackFindingAlg"
-      - "ActsBenchmarkSpotTrackFindingAlg"
-      - "ActsPixelSeedingAlg"
-      - "ActsBenchmarkSpotPixelSeedingAlg"
-      - "ActsStripSeedingAlg"
-      - "ActsBenchmarkSpotStripSeedingAlg"
 
     piecewise_const:
       - { start: "2024-07-10", end: "2024-07-28" }
@@ -107,4 +82,3 @@ flavors:
     annotations: []
 
     compare_to_other: []
-

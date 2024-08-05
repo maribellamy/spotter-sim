@@ -11,7 +11,6 @@ from matplotlib.dates import date2num
 
 from spotter.fitter import piecewise_const
 from spotter.utilities import date_range
-import ROOT
 
 
 def main():
@@ -19,7 +18,7 @@ def main():
     parser.add_argument(
         "--config",
         type=str,
-        default="config.yaml",
+        default="config/plot-trackfinding.yaml",
         help="Path to the configuration file",
     )
     parser.add_argument(
@@ -42,9 +41,7 @@ def main():
     start_date = date.fromisoformat(config["dates"]["start"])
     end_date = date.fromisoformat(config["dates"]["end"])
     date_list = date_range(start_date, end_date)
-    flavors = {
-        flavor: config["flavors"][flavor]["tag"] for flavor in config["flavors"].keys()
-    }
+    flavors = list(config["flavors"].keys())
     labels = [config["flavors"][flavor]["label"] for flavor in flavors]
     annotations_per_flavor = {
         flavor: config["flavors"][flavor]["annotations"] for flavor in flavors
@@ -137,12 +134,6 @@ def main():
     fig.savefig(args.plots_dir / "cpu.png")
     fig.savefig(args.plots_dir / "cpu.pdf")
 
-    ROOT.gROOT.SetStyle("ATLAS")
-    canvas = ROOT.TCanvas("canvas", "canvas", 1600, 800)
-    canvas.SetBottomMargin(0.25)
-    canvas.SetLeftMargin(0.12)
-    canvas.SetRightMargin(0.05)
-
     for flavor, annotations in annotations_per_flavor.items():
         selected_cpu_values = []
         for annotation in annotations:
@@ -172,6 +163,15 @@ def main():
             )
 
         if selected_cpu_values:
+            import ROOT
+
+            ROOT.gROOT.SetStyle("ATLAS")
+
+            canvas = ROOT.TCanvas("canvas", "canvas", 1200, 600)
+            canvas.SetBottomMargin(0.25)
+            canvas.SetLeftMargin(0.12)
+            canvas.SetRightMargin(0.05)
+
             plot = ROOT.TH1D(
                 f"plot_{flavor}",
                 "",
