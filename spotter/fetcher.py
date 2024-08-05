@@ -37,7 +37,7 @@ def do_fetch(data: SpotData) -> None:
 
     d: date = data.date
     for flavor, config in data.spot_configs.items():
-        data.addData(flavor=flavor, data=load(get_url(d=d, flavor=config.tag)))
+        data.add_data(flavor=flavor, data=load(get_url(d=d, flavor=config.tag)))
 
 
 def do_fetch_all(*, data: list[SpotData]) -> None:
@@ -72,28 +72,28 @@ def main():
     flavors: list[str] = list(config["flavors"].keys())
     step: str = config["step"]
 
-    spotConfs: list[SpotConfig] = []
+    spot_configs: list[SpotConfig] = []
     for flavor in flavors:
-        spotConfs.append(
+        spot_configs.append(
             SpotConfig(
                 flavor,
                 config["flavors"][flavor]["tag"],
-                config["flavors"][flavor]["components"],
+                config["flavors"][flavor]["points"],
             )
         )
 
-    spotData: list[SpotData] = []
+    spot_data: list[SpotData] = []
     for d in date_list:
         data = SpotData(d, step)
-        for conf in spotConfs:
-            data.addSpotConfiguration(spotConfig=conf)
-        spotData.append(data)
+        for conf in spot_configs:
+            data.add_spot_config(spot_config=conf)
+        spot_data.append(data)
 
     # Fetch the log files
-    do_fetch_all(data=spotData)
+    do_fetch_all(data=spot_data)
     data_per_algorithm_per_flavor: dict[
-        str, dict[str, dict[str, date | pd.core.frame.DataFrame]]
-    ] = extract_all_points(spotData)
+        str, dict[str, dict[str, date | pd.DataFrame]]
+    ] = extract_all_points(spot_data)
 
     args.data_dir.mkdir(parents=True, exist_ok=True)
 

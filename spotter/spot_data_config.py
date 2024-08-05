@@ -2,17 +2,16 @@ from datetime import date
 
 
 class SpotConfig:
-    def __init__(self, flavor: str, tag: str, components: list[str]) -> None:
+    def __init__(self, flavor: str, tag: str, points: list) -> None:
         assert isinstance(flavor, str)
         assert isinstance(tag, str)
-        assert isinstance(components, list)
-        assert len(components) != 0 and isinstance(components[0], str)
+        assert isinstance(points, list)
         self.flavor: str = flavor
         self.tag: str = tag
-        self.components: list[str] = components
+        self.points: list = points
 
     def __str__(self) -> str:
-        return f"SpotConfig(flavor={self.flavor}, tag={self.tag}, components={self.components})"
+        return f"SpotConfig(flavor={self.flavor}, tag={self.tag}, points={self.points})"
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -35,29 +34,29 @@ class SpotData:
     def __repr__(self) -> str:
         return self.__str__()
 
-    def addSpotConfiguration(self, *, spotConfig: SpotConfig) -> None:
-        assert isinstance(spotConfig, SpotConfig)
-        assert self.spot_configs.get(spotConfig.flavor, None) is None
-        self.spot_configs[spotConfig.flavor] = spotConfig
+    def add_spot_config(self, *, spot_config: SpotConfig) -> None:
+        assert isinstance(spot_config, SpotConfig)
+        assert self.spot_configs.get(spot_config.flavor, None) is None
+        self.spot_configs[spot_config.flavor] = spot_config
 
-    def addData(self, *, flavor: str, data: str | None) -> None:
+    def add_data(self, *, flavor: str, data: str | None) -> None:
         assert isinstance(flavor, str)
         assert data is None or isinstance(data, str)
         assert self.spot_configs.get(flavor, None) is not None
         assert self.data.get(flavor, None) is None
         self.data[flavor] = data
 
-    def getTag(self, *, flavor: str) -> str:
+    def get_tag(self, *, flavor: str) -> str:
         assert isinstance(flavor, str)
         assert self.spot_configs.get(flavor, None) is not None
         return self.spot_configs[flavor].tag
 
-    def getComponents(self, *, flavor: str) -> list[str]:
+    def get_points(self, *, flavor: str) -> list[str]:
         assert isinstance(flavor, str)
         assert self.spot_configs.get(flavor, None) is not None
-        return self.spot_configs[flavor].components
+        return self.spot_configs[flavor].points
 
-    def getData(self, *, flavor: str) -> str:
+    def get_data(self, *, flavor: str) -> str:
         assert isinstance(flavor, str)
         assert self.data.get(flavor, None) is not None
         return self.data[flavor]

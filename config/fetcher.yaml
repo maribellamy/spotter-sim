@@ -1,36 +1,33 @@
 dates:
   start: "2023-01-01"
-  end: "2024-07-29"
+  end: "2024-08-03"
 
 step: "Execute"
 
 flavors:
   legacy_default:
     tag: "tracking"
-    components: 
-      - "ITkSiSpTrackFinder"
+    points:
+      - { name: "track_finding", map: "ITkSiSpTrackFinder" }
 
   legacy_fast:
     tag: "fasttracking"
-    components:
-      - "ITkSiSpTrackFinder"
+    points:
+      - { name: "track_finding", map: "ITkSiSpTrackFinder" }
 
   acts_default:
     tag: "actstracking"
-    components:
-      - "ActsTrackFindingAlg"
-      - "ActsBenchmarkSpotTrackFindingAlg"
-      - "ActsPixelSeedingAlg"
-      - "ActsBenchmarkSpotPixelSeedingAlg"
-      - "ActsStripSeedingAlg"
-      - "ActsBenchmarkSpotStripSeedingAlg"
+    points:
+      - { name: "pixel_seeding", map: ".*PixelSeedingAlg" }
+      - { name: "strip_seeding", map: ".*StripSeedingAlg" }
+      - { name: "seeding", sum: ["pixel_seeding", "strip_seeding"] }
+      - { name: "ckf", map: ".*TrackFindingAlg" }
+      - { name: "track_finding", sum: ["seeding", "ckf"] }
 
   acts_fast:
     tag: "actsfasttracking"
-    components:
-      - "ActsTrackFindingAlg"
-      - "ActsBenchmarkSpotTrackFindingAlg"
-      - "ActsPixelSeedingAlg"
-      - "ActsBenchmarkSpotPixelSeedingAlg"
-      - "ActsStripSeedingAlg"
-      - "ActsBenchmarkSpotStripSeedingAlg"
+    points:
+      - { name: "pixel_seeding", map: ".*PixelSeedingAlg" }
+      - { name: "seeding", sum: ["pixel_seeding"] }
+      - { name: "ckf", map: ".*TrackFindingAlg" }
+      - { name: "track_finding", sum: ["seeding", "ckf"] }
