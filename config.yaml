@@ -7,7 +7,7 @@ step: "Execute"
 flavors:
   legacy_default:
     tag: "tracking"
-    label: "Athena Track Finding"
+    label: "current"
     components: 
       - "ITkSiSpTrackFinder"
 
@@ -21,7 +21,7 @@ flavors:
 
   legacy_fast:
     tag: "fasttracking"
-    label: "Athena Fast Track Finding"
+    label: "Athena Fast Tracking"
     components:
       - "ITkSiSpTrackFinder"
 
@@ -35,7 +35,7 @@ flavors:
 
   acts_default:
     tag: "actstracking"
-    label: "Acts-based Track Finding"
+    label: "Acts-based"
     components:
       - "ActsTrackFindingAlg"
       - "ActsBenchmarkSpotTrackFindingAlg"
@@ -92,7 +92,7 @@ flavors:
 
   acts_fast:
     tag: "actsfasttracking"
-    label: "Acts-based Fast Track Finding"
+    label: "Acts-based Fast Tracking"
     components:
       - "ActsTrackFindingAlg"
       - "ActsBenchmarkSpotTrackFindingAlg"
