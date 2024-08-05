@@ -1,7 +1,7 @@
 import re
 from datetime import date
 from collections import defaultdict
-from spotter.spot_data_config import spot_data
+from spotter.spot_data_config import SpotData
 
 import pandas as pd
 
@@ -99,8 +99,8 @@ def extract(
     }
 
 
-def extract_points(data: spot_data) -> dict[str, str | None]:
-    assert isinstance(data, spot_data)
+def extract_points(data: SpotData) -> dict[str, str | None]:
+    assert isinstance(data, SpotData)
 
     result = dict()
     for flavor, logText in data.data.items():
@@ -125,7 +125,7 @@ def extract_points(data: spot_data) -> dict[str, str | None]:
 
 
 def extract_all_points(
-    data: list[spot_data],
+    data: list[SpotData],
 ) -> dict[str, dict[str, dict[str, date | pd.core.frame.DataFrame]]]:
     assert isinstance(data, list)
 
@@ -133,7 +133,7 @@ def extract_all_points(
     data_per_algorithm_per_flavor = {flavor: defaultdict(list) for flavor in flavors}
 
     for sd in data:
-        assert isinstance(sd, spot_data)
+        assert isinstance(sd, SpotData)
         points_per_algorithm_per_flavor = extract_points(sd)
 
         for flavor, points_per_flavor in points_per_algorithm_per_flavor.items():
