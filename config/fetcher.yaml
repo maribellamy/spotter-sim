@@ -8,16 +8,30 @@ flavors:
   legacy_default:
     tag: "tracking"
     points:
+      - { name: "pixel_clusterization", map: "ITkPixelClusterization" }
+      - { name: "strip_clusterization", map: "ITkStripClusterization" }
+      - { name: "clusterization", sum: ["pixel_clusterization", "strip_clusterization"] }
+      - { name: "space_point_formation", map: "ITkSiTrackerSpacePointFinder" }
       - { name: "track_finding", map: "ITkSiSpTrackFinder" }
 
   legacy_fast:
     tag: "fasttracking"
     points:
+      - { name: "pixel_clusterization", map: "ITkPixelClusterization" }
+      - { name: "strip_clusterization", map: "ITkStripClusterization" }
+      - { name: "clusterization", sum: ["pixel_clusterization", "strip_clusterization"] }
+      - { name: "space_point_formation", map: "ITkSiTrackerSpacePointFinder" }
       - { name: "track_finding", map: "ITkSiSpTrackFinder" }
 
   acts_default:
     tag: "actstracking"
     points:
+      - { name: "pixel_clusterization", map: ".*PixelClusterizationAlg" }
+      - { name: "strip_clusterization", map: ".*StripClusterizationAlg" }
+      - { name: "clusterization", sum: ["pixel_clusterization", "strip_clusterization"] }
+      - { name: "pixel_space_point_formation", map: ".*PixelSpacePointFormation.*" }
+      - { name: "strip_space_point_formation", map: ".*StripSpacePointFormation.*" }
+      - { name: "space_point_formation", sum: ["pixel_space_point_formation", "strip_space_point_formation"] }
       - { name: "pixel_seeding", map: ".*PixelSeedingAlg" }
       - { name: "strip_seeding", map: ".*StripSeedingAlg" }
       - { name: "seeding", sum: ["pixel_seeding", "strip_seeding"] }
@@ -27,6 +41,11 @@ flavors:
   acts_fast:
     tag: "actsfasttracking"
     points:
+      - { name: "pixel_clusterization", map: ".*PixelClusterizationAlg" }
+      - { name: "strip_clusterization", map: ".*StripClusterizationAlg" }
+      - { name: "clusterization", sum: ["pixel_clusterization", "strip_clusterization"] }
+      - { name: "pixel_space_point_formation", map: ".*PixelSpacePointFormation.*" }
+      - { name: "space_point_formation", sum: ["pixel_space_point_formation"] }
       - { name: "pixel_seeding", map: ".*PixelSeedingAlg" }
       - { name: "seeding", sum: ["pixel_seeding"] }
       - { name: "ckf", map: ".*TrackFindingAlg" }

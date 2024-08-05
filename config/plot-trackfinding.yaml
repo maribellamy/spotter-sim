@@ -5,8 +5,6 @@ dates:
 flavors:
   legacy_default:
     label: "current"
-    components: 
-      - "ITkSiSpTrackFinder"
 
     piecewise_const:
       - { start: "2024-02-01", end: "2024-02-23" }
@@ -18,8 +16,6 @@ flavors:
 
   legacy_fast:
     label: "Athena Fast Tracking"
-    components:
-      - "ITkSiSpTrackFinder"
 
     piecewise_const:
       - { start: "2024-02-01", end: "2024-02-23" }
@@ -31,13 +27,6 @@ flavors:
 
   acts_default:
     label: "Acts-based"
-    components:
-      - "ActsTrackFindingAlg"
-      - "ActsBenchmarkSpotTrackFindingAlg"
-      - "ActsPixelSeedingAlg"
-      - "ActsBenchmarkSpotPixelSeedingAlg"
-      - "ActsStripSeedingAlg"
-      - "ActsBenchmarkSpotStripSeedingAlg"
 
     piecewise_const:
       - { start: "2023-11-01", end: "2023-11-07" }
@@ -86,13 +75,6 @@ flavors:
 
   acts_fast:
     label: "Acts-based Fast Tracking"
-    components:
-      - "ActsTrackFindingAlg"
-      - "ActsBenchmarkSpotTrackFindingAlg"
-      - "ActsPixelSeedingAlg"
-      - "ActsBenchmarkSpotPixelSeedingAlg"
-      - "ActsStripSeedingAlg"
-      - "ActsBenchmarkSpotStripSeedingAlg"
 
     piecewise_const:
       - { start: "2024-07-10", end: "2024-07-28" }

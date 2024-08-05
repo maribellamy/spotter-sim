@@ -5,23 +5,18 @@ dates:
 flavors:
   legacy_default:
     label: "Athena Space Point Formation"
-    components: 
-      - "ITkSiTrackerSpacePointFinder"
 
     piecewise_const: []
+
     annotations: []
+
+    compare_to_other: []
 
   acts_default:
     label: "ACTS Space Point Formation"
-    components:
-      - "ActsPixelSpacePointFormationAlg"
-      - "ActsStripSpacePointFormationAlg"
-      - "ActsTrkPixelSpacePointFormation"
-      - "ActsTrkStripSpacePointFormation"
-      - "ActsPixelSpacePointFormation"
-      - "ActsStripSpacePointFormation"
-      - "ActsBenchmarkSpotPixelSpacePointFormationAlg"
-      - "ActsBenchmarkSpotStripSpacePointFormationAlg"
 
     piecewise_const: []
+
     annotations: []
+
+    compare_to_other: []
