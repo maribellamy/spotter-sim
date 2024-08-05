@@ -1,6 +1,6 @@
 dates:
   start: "2024-02-01"
-  end: "2024-07-25"
+  end: "2024-07-28"
 
 step: "Execute"
 
@@ -13,7 +13,7 @@ flavors:
 
     piecewise_const:
       - { start: "2024-02-01", end: "2024-02-23" }
-      - { start: "2024-03-01", end: "2024-07-23" }
+      - { start: "2024-03-01", end: "2024-07-28" }
 
     annotations: []
 
@@ -27,7 +27,7 @@ flavors:
 
     piecewise_const:
       - { start: "2024-02-01", end: "2024-02-23" }
-      - { start: "2024-03-01", end: "2024-07-23" }
+      - { start: "2024-03-01", end: "2024-07-28" }
       
     annotations: []
 
@@ -64,7 +64,7 @@ flavors:
       - { start: "2024-05-24", end: "2024-06-04" }
       - { start: "2024-06-05", end: "2024-07-01" }
       - { start: "2024-07-02", end: "2024-07-07" }
-      - { start: "2024-07-08", end: "2024-07-23" }
+      - { start: "2024-07-08", end: "2024-07-28" }
 
     annotations:
       - { date: "2023-11-08", text: "!66631 - Switch ACTS\ntracking to\nAthena backends", alignment: "center", offset: [30, -250], select: False, label: "" }
@@ -77,18 +77,18 @@ flavors:
       - { date: "2024-03-13", text: "Unclear", alignment: "center", offset: [20, 40], select: False, label: "" }
       - { date: "2024-03-18", text: "!69856 - Reduce branching\nfrom 3 to 1", alignment: "center", offset: [-20, -80], select: True, label: "Reduce branches" }
       - { date: "2024-04-03", text: "Unclear", alignment: "center", offset: [-70, 40], select: False, label: "" }
-      - { date: "2024-04-05", text: "!70171 - Extend tracks\nin both directions", alignment: "center", offset: [10, -80], select: True, label: "#splitline{Bi-directional}{track extension}" }
-      - { date: "2024-04-13", text: "!70487\nstd::unordered_multimap\ninstead of\nboost::flat_multimap", alignment: "center", offset: [65, 125], select: True, label: "#splitline{Container}{usage optimisation}" }
-      - { date: "2024-04-23", text: "!70375 - ACTS EDM\nbackend during CKF", alignment: "center", offset: [-50, -60], select: True, label: "EDM optimisation" }
-      - { date: "2024-04-30", text: "!70940 - Stop branches\non holes and outliers", alignment: "center", offset: [20, 110], select: True, label: "#splitline{Use of branch}{stoppers}" }
-      - { date: "2024-05-17", text: "!71469 - Bare pointers\ninstead of ElementLinks", alignment: "center", offset: [20, 70], select: True, label: "#splitline{More EDM}{optimisation}" }
-      - { date: "2024-05-24", text: "!71683 - Disable\nKF on seeds", alignment: "center", offset: [25, 30], select: True, label: "#splitline{Disabling fitting}{of seeds}" }
+      - { date: "2024-04-05", text: "!70171 - Extend tracks\nin both directions", alignment: "center", offset: [10, -80], select: True, label: "Bi-directional track finding" }
+      - { date: "2024-04-13", text: "!70487\nstd::unordered_multimap\ninstead of\nboost::flat_multimap", alignment: "center", offset: [65, 125], select: True, label: "EDM optimisation (I)" }
+      - { date: "2024-04-23", text: "!70375 - ACTS EDM\nbackend during CKF", alignment: "center", offset: [-50, -60], select: True, label: "EDM optimisation (II)" }
+      - { date: "2024-04-30", text: "!70940 - Stop branches\non holes and outliers", alignment: "center", offset: [20, 110], select: True, label: "Use of branch stoppers" }
+      - { date: "2024-05-17", text: "!71469 - Bare pointers\ninstead of ElementLinks", alignment: "center", offset: [20, 70], select: True, label: "EDM optimisation (III)" }
+      - { date: "2024-05-24", text: "!71683 - Disable\nKF on seeds", alignment: "center", offset: [25, 30], select: True, label: "Disabling fitting of seeds" }
       - { date: "2024-06-05", text: "!71789 - Enable\nanalog clustering", alignment: "center", offset: [25, 30], select: False, label: "" }
       - { date: "2024-07-03", text: "!72610 - Faster\nmeasurement\nselector", alignment: "center", offset: [0, 80], select: False, label: "" }
-      - { date: "2024-07-08", text: "!72881 - Calibrate only\nselected", alignment: "center", offset: [-100, 0], select: True, label: "#splitline{Mesurement selector}{optimisation}" }
+      - { date: "2024-07-08", text: "!72881 - Calibrate only\nselected", alignment: "center", offset: [-100, 0], select: True, label: "#splitline{Measurement selector}{    optimisation}" }
 
 
-    compare_to_other: ["legacy_default", "2024-07-23"]
+    compare_to_other: ["legacy_default", "2024-07-28"]
 
   acts_fast:
     tag: "actsfasttracking"
@@ -102,7 +102,7 @@ flavors:
       - "ActsBenchmarkSpotStripSeedingAlg"
 
     piecewise_const:
-      - { start: "2024-07-10", end: "2024-07-23" }
+      - { start: "2024-07-10", end: "2024-07-28" }
     
     annotations: []
 

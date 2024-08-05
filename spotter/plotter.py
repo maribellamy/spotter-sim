@@ -138,8 +138,7 @@ def main():
     fig.savefig(args.plots_dir / "cpu.pdf")
 
     ROOT.gROOT.SetStyle("ATLAS")
-
-    canvas = ROOT.TCanvas("canvas", "canvas", 1200, 600)
+    canvas = ROOT.TCanvas("canvas", "canvas", 1600, 800)
     canvas.SetBottomMargin(0.25)
     canvas.SetLeftMargin(0.12)
     canvas.SetRightMargin(0.05)
@@ -208,23 +207,26 @@ def main():
                 len(selected_cpu_values) + 3, len(selected_cpu_values) + 0.5, 0
             )
             plot.GetXaxis().SetTitle("Work Progress")
-            plot.GetXaxis().SetTitleOffset(2.1)
+            plot.GetXaxis().SetTitleOffset(2.7)
             plot.GetXaxis().SetLabelOffset(0.022)
             plot.GetYaxis().SetTitleOffset(0.9)
+            plot.GetYaxis().SetTitleSize(0.035)
 
             plot.GetYaxis().SetRangeUser(0.5, 6.5)
             plot.GetXaxis().SetRangeUser(0.0, len(selected_cpu_values) + 1)
             plot.GetYaxis().SetTitle(
                 "#frac{"
                 + config["flavors"][flavor]["label"]
-                + " CPU time }{"
+                + " CPU time per event}{"
                 + config["flavors"][compare_to_flavor]["label"]
-                + " CPU time}"
+                + " CPU time per event}"
             )
 
             graph.SetFillStyle(1001)
-            graph.SetFillColor(ROOT.kPink + 1)
-            graph.SetLineColor(ROOT.kPink + 5)
+            # graph.SetFillColor(ROOT.kPink + 1)
+            # graph.SetLineColor(ROOT.kPink + 5)
+            graph.SetFillColor(ROOT.kAzure - 4)
+            graph.SetLineColor(ROOT.kAzure - 6)
             graph.SetLineWidth(2)
 
             plot.Draw("")
@@ -233,37 +235,42 @@ def main():
 
             ROOT.gPad.RedrawAxis()
 
-            atlas = ROOT.TLatex(0.58, 0.85, "ATLAS")
+            atlas = ROOT.TLatex(0.50, 0.85, "ATLAS")
             atlas.SetNDC()
             atlas.SetTextFont(72)
             atlas.SetLineWidth(2)
             atlas.Draw()
 
-            type_of_plot = ROOT.TLatex(0.7, 0.85, "Internal")
+            type_of_plot = ROOT.TLatex(0.60, 0.85, "Internal")
             type_of_plot.SetNDC()
             type_of_plot.SetTextFont(42)
             type_of_plot.SetLineWidth(2)
             type_of_plot.Draw()
 
-            dataset = ROOT.TLatex(
-                0.58, 0.78, "HL-LHC, #sqrt{s} = 14 TeV, t#bar{t}, #LT#mu#GT = 200"
+            sample = ROOT.TLatex(
+                0.50, 0.78, "HL-LHC, #sqrt{s} = 14 TeV, t#bar{t}, #LT#mu#GT = 200"
             )
-            dataset.SetNDC()
-            dataset.SetTextFont(42)
-            dataset.SetLineWidth(2)
-            dataset.Draw()
+            sample.SetNDC()
+            sample.SetTextFont(42)
+            sample.SetTextSize(0.04)
+            sample.SetLineWidth(2)
+            sample.Draw()
 
-            athena = ROOT.TLatex(0.58, 0.71, "Athena (ADD RELEASE)")
-            athena.SetNDC()
-            athena.SetTextFont(42)
-            athena.SetLineWidth(2)
-            athena.Draw()
-
-            acts = ROOT.TLatex(0.58, 0.64, "ACTS (ADD VERSION)")
-            acts.SetNDC()
-            acts.SetTextFont(42)
-            acts.SetLineWidth(2)
-            acts.Draw()
+            text_on_plot = [
+                "Start date: 15 February 2024, Athena 24.0.24 (Acts v32.0.2)",
+                "End date: 30 July 2024, Athena 25.0.11 (Acts v36.0.0)",
+            ]
+            latex_text = []
+            x, y = 0.50, 0.72
+            y_offset = 0.06
+            for line, text in enumerate(text_on_plot):
+                ltext = ROOT.TLatex(x, y - line * y_offset, text)
+                ltext.SetNDC()
+                ltext.SetTextFont(42)
+                ltext.SetTextSize(0.035)
+                ltext.SetLineWidth(2)
+                latex_text.append(ltext)
+                ltext.Draw("same")
 
             line = ROOT.TLine(-0.5, 1, len(selected_cpu_values) + 0.5, 1.0)
             line.SetLineColor(ROOT.kBlack)
