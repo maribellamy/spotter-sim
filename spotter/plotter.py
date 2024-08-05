@@ -210,24 +210,18 @@ def main():
             plot.GetXaxis().SetTitleOffset(2.7)
             plot.GetXaxis().SetLabelOffset(0.022)
             plot.GetYaxis().SetTitleOffset(0.9)
-            plot.GetYaxis().SetTitleSize(0.035)
+            # plot.GetYaxis().SetTitleSize(0.035)
 
             plot.GetYaxis().SetRangeUser(0.5, 6.5)
             plot.GetXaxis().SetRangeUser(0.0, len(selected_cpu_values) + 1)
-            plot.GetYaxis().SetTitle(
-                "#frac{"
-                + config["flavors"][flavor]["label"]
-                + " CPU time per event}{"
-                + config["flavors"][compare_to_flavor]["label"]
-                + " CPU time per event}"
-            )
+            plot.GetYaxis().SetTitle("Relative CPU time per event")
 
             graph.SetFillStyle(1001)
             # graph.SetFillColor(ROOT.kPink + 1)
             # graph.SetLineColor(ROOT.kPink + 5)
             graph.SetFillColor(ROOT.kAzure - 4)
             graph.SetLineColor(ROOT.kAzure - 6)
-            graph.SetLineWidth(2)
+            graph.SetLineWidth(3)
 
             plot.Draw("")
 
@@ -235,20 +229,20 @@ def main():
 
             ROOT.gPad.RedrawAxis()
 
-            atlas = ROOT.TLatex(0.50, 0.85, "ATLAS")
+            atlas = ROOT.TLatex(0.50, 0.88, "ATLAS")
             atlas.SetNDC()
             atlas.SetTextFont(72)
             atlas.SetLineWidth(2)
             atlas.Draw()
 
-            type_of_plot = ROOT.TLatex(0.60, 0.85, "Internal")
+            type_of_plot = ROOT.TLatex(0.60, 0.88, "Internal")
             type_of_plot.SetNDC()
             type_of_plot.SetTextFont(42)
             type_of_plot.SetLineWidth(2)
             type_of_plot.Draw()
 
             sample = ROOT.TLatex(
-                0.50, 0.78, "HL-LHC, #sqrt{s} = 14 TeV, t#bar{t}, #LT#mu#GT = 200"
+                0.50, 0.82, "HL-LHC, #sqrt{s} = 14 TeV, t#bar{t}, #LT#mu#GT = 200"
             )
             sample.SetNDC()
             sample.SetTextFont(42)
@@ -257,11 +251,15 @@ def main():
             sample.Draw()
 
             text_on_plot = [
+                config["flavors"][flavor]["label"]
+                + " vs "
+                + config["flavors"][compare_to_flavor]["label"]
+                + " track seeding and finding CPU/Event",
                 "Start date: 15 February 2024, Athena 24.0.24 (Acts v32.0.2)",
                 "End date: 30 July 2024, Athena 25.0.11 (Acts v36.0.0)",
             ]
             latex_text = []
-            x, y = 0.50, 0.72
+            x, y = 0.50, 0.76
             y_offset = 0.06
             for line, text in enumerate(text_on_plot):
                 ltext = ROOT.TLatex(x, y - line * y_offset, text)
