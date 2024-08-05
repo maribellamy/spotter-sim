@@ -137,16 +137,11 @@ def main():
     fig.savefig(args.plots_dir / "cpu.png")
     fig.savefig(args.plots_dir / "cpu.pdf")
 
-
-    useROOT = False
-    canvas = None
-    if useROOT:
-        import ROOT
-        ROOT.gROOT.SetStyle("ATLAS")
-        canvas = ROOT.TCanvas("canvas", "canvas", 1600, 800)
-        canvas.SetBottomMargin(0.30)
-        canvas.SetLeftMargin(0.12)
-        canvas.SetRightMargin(0.05)
+    ROOT.gROOT.SetStyle("ATLAS")
+    canvas = ROOT.TCanvas("canvas", "canvas", 1600, 800)
+    canvas.SetBottomMargin(0.25)
+    canvas.SetLeftMargin(0.12)
+    canvas.SetRightMargin(0.05)
 
     for flavor, annotations in annotations_per_flavor.items():
         selected_cpu_values = []
@@ -176,7 +171,7 @@ def main():
                 arrowprops=dict(arrowstyle="-|>"),
             )
 
-        if useROOT and selected_cpu_values:
+        if selected_cpu_values:
             plot = ROOT.TH1D(
                 f"plot_{flavor}",
                 "",
@@ -212,11 +207,10 @@ def main():
                 len(selected_cpu_values) + 3, len(selected_cpu_values) + 0.5, 0
             )
             plot.GetXaxis().SetTitle("Work Progress")
-            plot.GetXaxis().SetTitleOffset(3.0)
+            plot.GetXaxis().SetTitleOffset(2.7)
             plot.GetXaxis().SetLabelOffset(0.022)
             plot.GetYaxis().SetTitleOffset(0.9)
-            plot.GetYaxis().SetTitleSize(0.04)
-
+            plot.GetYaxis().SetTitleSize(0.035)
 
             plot.GetYaxis().SetRangeUser(0.5, 6.5)
             plot.GetXaxis().SetRangeUser(0.0, len(selected_cpu_values) + 1)
@@ -241,34 +235,42 @@ def main():
 
             ROOT.gPad.RedrawAxis()
 
-            atlas = ROOT.TLatex(0.58, 0.85, "ATLAS")
+            atlas = ROOT.TLatex(0.50, 0.85, "ATLAS")
             atlas.SetNDC()
             atlas.SetTextFont(72)
             atlas.SetLineWidth(2)
             atlas.Draw()
 
-            type_of_plot = ROOT.TLatex(0.7, 0.85, "Internal")
+            type_of_plot = ROOT.TLatex(0.60, 0.85, "Internal")
             type_of_plot.SetNDC()
             type_of_plot.SetTextFont(42)
             type_of_plot.SetLineWidth(2)
             type_of_plot.Draw()
 
-            text_on_plot = ["HL-LHC, #sqrt{s} = 14 TeV, t#bar{t}, #LT#mu#GT = 200",
-                            "starting date: 1 February 2024",
-                            "last update: 30 July 2024",
-                            "Athena 25.0.11 (Acts v36.0.0)"]
+            sample = ROOT.TLatex(
+                0.50, 0.78, "HL-LHC, #sqrt{s} = 14 TeV, t#bar{t}, #LT#mu#GT = 200"
+            )
+            sample.SetNDC()
+            sample.SetTextFont(42)
+            sample.SetTextSize(0.04)
+            sample.SetLineWidth(2)
+            sample.Draw()
+
+            text_on_plot = [
+                "Start date: 15 February 2024, Athena 24.0.24 (Acts v32.0.2)",
+                "End date: 30 July 2024, Athena 25.0.11 (Acts v36.0.0)",
+            ]
             latex_text = []
-            x, y = 0.58, 0.78
+            x, y = 0.50, 0.72
             y_offset = 0.06
             for line, text in enumerate(text_on_plot):
-                ltext = ROOT.TLatex(x, y-line*y_offset, text)
+                ltext = ROOT.TLatex(x, y - line * y_offset, text)
                 ltext.SetNDC()
                 ltext.SetTextFont(42)
-                ltext.SetTextSize(0.04)
+                ltext.SetTextSize(0.035)
                 ltext.SetLineWidth(2)
                 latex_text.append(ltext)
                 ltext.Draw("same")
-
 
             line = ROOT.TLine(-0.5, 1, len(selected_cpu_values) + 0.5, 1.0)
             line.SetLineColor(ROOT.kBlack)
