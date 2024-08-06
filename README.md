@@ -21,4 +21,4 @@ python -m spotter.plotter
 Afterwards you should find a couple of PNG and PDF files in the current working directory.
 
 Example:
-![CPU annotated](cpu_annotated.png)
+![CPU annotated](plots/cpu_annotated.png)

@@ -67,6 +67,7 @@ def main():
             df = pd.read_csv(file, parse_dates=["date"])
             df["date"] = pd.to_datetime(df["date"])
             df.index = df["date"]
+            df = df.loc[start_date:end_date]
             data_per_algorithm_per_flavor[flavor][algorithm] = df
 
     track_finding_data = {
@@ -159,7 +160,7 @@ def main():
                 xytext=txy,
                 ha=ha,
                 textcoords="offset points",
-                arrowprops=dict(arrowstyle="-|>"),
+                arrowprops=dict(arrowstyle="-|>", color="k"),
             )
 
         if selected_cpu_values:
