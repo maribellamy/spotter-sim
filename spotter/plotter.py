@@ -2,12 +2,16 @@ from datetime import date
 import argparse
 from pathlib import Path
 import re
+import textwrap
 
 import yaml
 
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.dates import date2num
+import matplotlib.ticker
+import mplhep as hep
 
 from spotter.fitter import piecewise_const
 from spotter.utilities import date_range
@@ -164,125 +168,96 @@ def main():
             )
 
         if selected_cpu_values:
-            import ROOT
+            with plt.style.context(hep.style.ATLAS):
+                compare_to_flavor, compare_to_date = config["flavors"][flavor][
+                    "compare_to_other"
+                ]
+                compare_to_cpu = (
+                    track_finding_data[compare_to_flavor]
+                    .loc[compare_to_date:compare_to_date]
+                    .cpu.iloc[0]
+                )
+                print(compare_to_cpu)
+                cpu_abs = np.array(
+                    [t for t, _ in selected_cpu_values], dtype=np.float64
+                )
+                cpu_labels = [
+                    f"{i}: {l}" for i, (_, l) in enumerate(selected_cpu_values, start=1)
+                ]
+                cpu_rel = cpu_abs / compare_to_cpu
+                cpu_rel = np.insert(cpu_rel, 0, cpu_rel[0])
+                cpu_rel = np.insert(cpu_rel, -1, cpu_rel[-1])
 
-            ROOT.gROOT.SetStyle("ATLAS")
+                print(cpu_rel)
 
-            canvas = ROOT.TCanvas("canvas", "canvas", 1200, 600)
-            canvas.SetBottomMargin(0.25)
-            canvas.SetLeftMargin(0.12)
-            canvas.SetRightMargin(0.05)
+                compare_fig, compare_ax = plt.subplots(figsize=(10, 5))
 
-            plot = ROOT.TH1D(
-                f"plot_{flavor}",
-                "",
-                len(selected_cpu_values),
-                -0.5,
-                len(selected_cpu_values) - 0.5,
-            )
-            plot.SetStats(0)
-            compare_to_flavor, compare_to_date = config["flavors"][flavor][
-                "compare_to_other"
-            ]
-            compare_to_cpu = (
-                track_finding_data[compare_to_flavor]
-                .loc[compare_to_date:compare_to_date]
-                .cpu.iloc[0]
-            )
+                # this gets rid of the vertical lines. we clip in y later anyway
+                xrange = np.arange(len(cpu_rel))
+                xrange[0] -= 5
+                xrange[-1] += 5
+                compare_ax.fill_between(
+                    xrange,
+                    cpu_rel,
+                    fc="#6699ff",  # kAzure - 4
+                    ec="#003399",  # kAzure - 6
+                    lw=3,
+                )
 
-            graph = ROOT.TGraph(len(selected_cpu_values) + 4)
+                compare_ax.set_xlim(0, len(cpu_rel) - 1)
+                _, ymax = compare_ax.get_ylim()
+                compare_ax.set_ylim(0.5, ymax + 0.2)
 
-            for bin, (cpu, label) in enumerate(selected_cpu_values):
-                plot.GetXaxis().SetBinLabel(plot.GetXaxis().FindBin(bin), label)
+                compare_ax.set_ylabel("Relative CPU time per event")
+                compare_ax.set_xlabel("Work Progress", labelpad=0)
 
-                graph.SetPoint(bin + 2, bin + 0.5, cpu / compare_to_cpu)
+                ticks = np.arange(len(cpu_rel) - 1)
+                compare_ax.set_xticks(ticks)
+                compare_ax.set_xticklabels([])
+                compare_ax.set_xticks(np.arange(len(cpu_rel) - 1) + 0.5, minor=True)
+                # compare_ax.xaxis.set_minor_locator(
+                #     matplotlib.ticker.AutoMinorLocator(2)
+                # )
 
-            graph.SetPoint(0, -0.5, 0)
-            graph.SetPoint(1, -0.5, graph.GetPointY(2))
-            graph.SetPoint(
-                len(selected_cpu_values) + 2,
-                len(selected_cpu_values) + 0.5,
-                graph.GetPointY(len(selected_cpu_values) + 1),
-            )
-            graph.SetPoint(
-                len(selected_cpu_values) + 3, len(selected_cpu_values) + 0.5, 0
-            )
-            plot.GetXaxis().SetTitle("Work Progress")
-            plot.GetXaxis().SetTitleOffset(2.7)
-            plot.GetXaxis().SetLabelOffset(0.022)
-            plot.GetYaxis().SetTitleOffset(0.9)
-            # plot.GetYaxis().SetTitleSize(0.035)
+                compare_ax.set_xticklabels(
+                    cpu_labels + [""],
+                    rotation=-22,
+                    ha="left",
+                    va="top",
+                    ma="center",
+                    fontsize=10,
+                    minor=True,
+                )
+                compare_ax.tick_params(
+                    axis="x", which="minor", tick1On=False, tick2On=False
+                )
 
-            plot.GetYaxis().SetRangeUser(0.5, 6.5)
-            plot.GetXaxis().SetRangeUser(0.0, len(selected_cpu_values) + 1)
-            plot.GetYaxis().SetTitle("Relative CPU time per event")
+                hep.atlas.text("Internal", fontsize=16, pad=0)
 
-            graph.SetFillStyle(1001)
-            # graph.SetFillColor(ROOT.kPink + 1)
-            # graph.SetLineColor(ROOT.kPink + 5)
-            graph.SetFillColor(ROOT.kAzure - 4)
-            graph.SetLineColor(ROOT.kAzure - 6)
-            graph.SetLineWidth(3)
+                text = rf"""
+HL-LHC, $\sqrt{{s}}$ = 14 TeV, $t\bar{{t}}$, $\langle\mu\rangle$ = 200
+{config["flavors"][flavor]["label"]} vs {config["flavors"][compare_to_flavor]["label"]} track seeding and finding CPU/Event
+Start date: 15 February 2024, Athena 24.0.24 (Acts v32.0.2)
+End date: 30 July 2024, Athena 25.0.11 (Acts v36.0.0)
+                """
+                text = textwrap.dedent(text.strip())
 
-            plot.Draw("")
+                print(text)
 
-            graph.Draw("LF")
+                compare_ax.text(
+                    0.97,
+                    0.96,
+                    s=text,
+                    transform=compare_ax.transAxes,
+                    ha="right",
+                    va="top",
+                    ma="left",
+                )
 
-            ROOT.gPad.RedrawAxis()
+                text_on_plot = []
 
-            atlas = ROOT.TLatex(0.50, 0.88, "ATLAS")
-            atlas.SetNDC()
-            atlas.SetTextFont(72)
-            atlas.SetLineWidth(2)
-            atlas.Draw()
-
-            type_of_plot = ROOT.TLatex(0.60, 0.88, "Internal")
-            type_of_plot.SetNDC()
-            type_of_plot.SetTextFont(42)
-            type_of_plot.SetLineWidth(2)
-            type_of_plot.Draw()
-
-            sample = ROOT.TLatex(
-                0.50, 0.82, "HL-LHC, #sqrt{s} = 14 TeV, t#bar{t}, #LT#mu#GT = 200"
-            )
-            sample.SetNDC()
-            sample.SetTextFont(42)
-            sample.SetTextSize(0.04)
-            sample.SetLineWidth(2)
-            sample.Draw()
-
-            text_on_plot = [
-                config["flavors"][flavor]["label"]
-                + " vs "
-                + config["flavors"][compare_to_flavor]["label"]
-                + " track seeding and finding CPU/Event",
-                "Start date: 15 February 2024, Athena 24.0.24 (Acts v32.0.2)",
-                "End date: 30 July 2024, Athena 25.0.11 (Acts v36.0.0)",
-            ]
-            latex_text = []
-            x, y = 0.50, 0.76
-            y_offset = 0.06
-            for line, text in enumerate(text_on_plot):
-                ltext = ROOT.TLatex(x, y - line * y_offset, text)
-                ltext.SetNDC()
-                ltext.SetTextFont(42)
-                ltext.SetTextSize(0.035)
-                ltext.SetLineWidth(2)
-                latex_text.append(ltext)
-                ltext.Draw("same")
-
-            line = ROOT.TLine(-0.5, 1, len(selected_cpu_values) + 0.5, 1.0)
-            line.SetLineColor(ROOT.kBlack)
-            line.SetLineStyle(3)
-            line.SetLineWidth(2)
-            line.Draw()
-
-            canvas.SaveAs(
-                str(args.plots_dir / f"CPU_acts_athena_progress_{flavor}.png")
-            )
-            canvas.SaveAs(
-                str(args.plots_dir / f"CPU_acts_athena_progress_{flavor}.pdf")
-            )
+                compare_fig.tight_layout()
+                compare_fig.savefig(args.plots_dir / f"cpu_{flavor}_rel.pdf")
 
     fig.savefig(args.plots_dir / "cpu_annotated.png")
     fig.savefig(args.plots_dir / "cpu_annotated.pdf")
