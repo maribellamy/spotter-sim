@@ -277,7 +277,12 @@ def main():
             line.SetLineWidth(2)
             line.Draw()
 
-            canvas.SaveAs(str(args.plots_dir / "CPU_acts_athena_progress.png"))
+            canvas.SaveAs(
+                str(args.plots_dir / f"CPU_acts_athena_progress_{flavor}.png")
+            )
+            canvas.SaveAs(
+                str(args.plots_dir / f"CPU_acts_athena_progress_{flavor}.pdf")
+            )
 
     fig.savefig(args.plots_dir / "cpu_annotated.png")
     fig.savefig(args.plots_dir / "cpu_annotated.pdf")
