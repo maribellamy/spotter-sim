@@ -176,7 +176,6 @@ def main():
                     .loc[compare_to_date:compare_to_date]
                     .cpu.iloc[0]
                 )
-                print(compare_to_cpu)
                 cpu_abs = np.array(
                     [t for t, _ in selected_cpu_values], dtype=np.float64
                 )
@@ -186,8 +185,6 @@ def main():
                 cpu_rel = cpu_abs / compare_to_cpu
                 cpu_rel = np.insert(cpu_rel, 0, cpu_rel[0])
                 cpu_rel = np.insert(cpu_rel, -1, cpu_rel[-1])
-
-                print(cpu_rel)
 
                 compare_fig, compare_ax = plt.subplots(figsize=(10, 5))
 
@@ -214,9 +211,6 @@ def main():
                 compare_ax.set_xticks(ticks)
                 compare_ax.set_xticklabels([])
                 compare_ax.set_xticks(np.arange(len(cpu_rel) - 1) + 0.5, minor=True)
-                # compare_ax.xaxis.set_minor_locator(
-                #     matplotlib.ticker.AutoMinorLocator(2)
-                # )
 
                 compare_ax.set_xticklabels(
                     cpu_labels + [""],
@@ -240,8 +234,6 @@ Start date: 15 February 2024, Athena 24.0.24 (Acts v32.0.2)
 End date: 30 July 2024, Athena 25.0.11 (Acts v36.0.0)
                 """
                 text = textwrap.dedent(text.strip())
-
-                print(text)
 
                 compare_ax.text(
                     0.97,
