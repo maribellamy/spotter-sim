@@ -10,7 +10,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.dates import date2num
-import matplotlib.ticker
 import mplhep as hep
 
 from spotter.fitter import piecewise_const
@@ -253,8 +252,6 @@ End date: 30 July 2024, Athena 25.0.11 (Acts v36.0.0)
                     va="top",
                     ma="left",
                 )
-
-                text_on_plot = []
 
                 compare_fig.tight_layout()
                 compare_fig.savefig(args.plots_dir / f"cpu_{flavor}_rel.pdf")
