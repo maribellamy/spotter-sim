@@ -250,6 +250,8 @@ End date: 30 July 2024, Athena 25.0.11 (Acts v36.0.0)
                 )
 
                 compare_fig.tight_layout()
+
+                compare_fig.savefig(args.plots_dir / f"cpu_{flavor}_rel.png")
                 compare_fig.savefig(args.plots_dir / f"cpu_{flavor}_rel.pdf")
 
     fig.savefig(args.plots_dir / "cpu_annotated.png")

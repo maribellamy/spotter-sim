@@ -71,7 +71,7 @@ flavors:
       - { date: "2024-06-05", text: "!71789 - Enable\nanalog clustering", alignment: "center", offset: [25, 30], select: False, label: "" }
       - { date: "2024-07-03", text: "!72610 - Faster\nmeasurement\nselector", alignment: "center", offset: [0, 80], select: False, label: "" }
       - { date: "2024-07-08", text: "!72881 - Calibrate only\nselected", alignment: "center", offset: [-100, 0], select: True, label: "Measurement selector\noptimisation" }
-      - { date: "2024-08-23", text: "!72932 - SympyStepper", alignment: "center", offset: [0, 50], select: True, label: "" }
+      - { date: "2024-08-23", text: "!72932 - SympyStepper", alignment: "center", offset: [0, 50], select: True, label: "Stepper optimization" }
     
     compare_to_other: ["legacy_default", "2024-08-24"]
 
