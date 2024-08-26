@@ -1,0 +1,7 @@
+matplotlib
+numpy
+pandas
+PyYAML
+requests
+urllib3
+mplhep
