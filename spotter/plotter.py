@@ -200,6 +200,8 @@ def main():
                     lw=3,
                 )
 
+                compare_ax.axhline(1, color="#003399", lw=3, ls="--")
+
                 compare_ax.set_xlim(0, len(cpu_rel) - 1)
                 _, ymax = compare_ax.get_ylim()
                 compare_ax.set_ylim(0.5, ymax + 0.2)
@@ -211,6 +213,8 @@ def main():
                 compare_ax.set_xticks(ticks)
                 compare_ax.set_xticklabels([])
                 compare_ax.set_xticks(np.arange(len(cpu_rel) - 1) + 0.5, minor=True)
+
+                compare_ax.set_yticks([1, 2, 3, 4, 5, 6])
 
                 compare_ax.set_xticklabels(
                     cpu_labels + [""],
