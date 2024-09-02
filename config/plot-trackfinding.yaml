@@ -1,6 +1,6 @@
 dates:
   start: "2024-02-01"
-  end: "2024-08-24"
+  end: "2024-08-31"
 
 flavors:
   legacy_default:
@@ -8,7 +8,7 @@ flavors:
 
     piecewise_const:
       - { start: "2024-02-01", end: "2024-02-23" }
-      - { start: "2024-03-01", end: "2024-08-24" }
+      - { start: "2024-03-01", end: "2024-08-31" }
 
     annotations: []
 
@@ -19,7 +19,7 @@ flavors:
 
     piecewise_const:
       - { start: "2024-02-01", end: "2024-02-23" }
-      - { start: "2024-03-01", end: "2024-08-24" }
+      - { start: "2024-03-01", end: "2024-08-31" }
       
     annotations: []
 
@@ -49,7 +49,7 @@ flavors:
       - { start: "2024-06-05", end: "2024-07-01" }
       - { start: "2024-07-02", end: "2024-07-07" }
       - { start: "2024-07-08", end: "2024-08-22" }
-      - { start: "2024-08-23", end: "2024-08-24" }
+      - { start: "2024-08-23", end: "2024-08-31" }
 
     annotations:
       - { date: "2023-11-08", text: "!66631 - Switch ACTS\ntracking to\nAthena backends", alignment: "center", offset: [30, -250], select: False, label: "" }
@@ -73,13 +73,13 @@ flavors:
       - { date: "2024-07-08", text: "!72881 - Calibrate only\nselected", alignment: "center", offset: [-100, 0], select: True, label: "Measurement selector\noptimisation" }
       - { date: "2024-08-23", text: "!72932 - SympyStepper", alignment: "center", offset: [0, 50], select: True, label: "Stepper optimization" }
     
-    compare_to_other: ["legacy_default", "2024-08-24"]
+    compare_to_other: ["legacy_default", "2024-08-31"]
 
   acts_fast:
     label: "Acts-based Fast Tracking"
 
     piecewise_const:
-      - { start: "2024-07-10", end: "2024-08-24" }
+      - { start: "2024-07-10", end: "2024-08-31" }
     
     annotations: []
 
