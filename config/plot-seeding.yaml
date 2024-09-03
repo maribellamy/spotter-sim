@@ -5,13 +5,10 @@ dates:
 step: "Execute"
 
 flavors:
-  acts_pixel:
+  acts_default:
     tag: "actstracking"
-    label: "ACTS Pixel Seeding"
-    components:
-      - "ActsPixelSeedingAlg"
-      - "ActsTrkPixelSeedingAlg"
-      - "ActsBenchmarkSpotPixelSeedingAlg"
+    label: "ACTS Seeding"
+    points: pixel_seeding
 
     piecewise_const:
       - { start: "2023-07-09", end: "2023-07-23" }
@@ -22,13 +19,10 @@ flavors:
       - { start: "2024-02-24", end: "2024-07-25" }
     annotations: []
 
-  acts_strip:
+  acts_fast:
     tag: "actstracking"
-    label: "ACTS Strip Seeding"
-    components:
-      - "ActsStripSeedingAlg"
-      - "ActsTrkStripSeedingAlg"
-      - "ActsBenchmarkSpotStripSeedingAlg"
+    label: "ACTS Fast Seeding"
+    points: pixel_seeding
 
     piecewise_const:
       - { start: "2023-07-09", end: "2023-07-24" }

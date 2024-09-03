@@ -5,6 +5,7 @@ dates:
 flavors:
   legacy_default:
     label: "current"
+    points: track_finding
 
     piecewise_const:
       - { start: "2024-02-01", end: "2024-02-23" }
@@ -16,6 +17,7 @@ flavors:
 
   legacy_fast:
     label: "Athena Fast Tracking"
+    points: track_finding
 
     piecewise_const:
       - { start: "2024-02-01", end: "2024-02-23" }
@@ -27,6 +29,7 @@ flavors:
 
   acts_default:
     label: "Acts-based"
+    points: track_finding
 
     piecewise_const:
       - { start: "2023-11-01", end: "2023-11-07" }
@@ -77,6 +80,7 @@ flavors:
 
   acts_fast:
     label: "Acts-based Fast Tracking"
+    points: track_finding
 
     piecewise_const:
       - { start: "2024-07-10", end: "2024-08-31" }

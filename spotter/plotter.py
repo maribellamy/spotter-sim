@@ -74,7 +74,7 @@ def main():
             data_per_algorithm_per_flavor[flavor][algorithm] = df
 
     track_finding_data = {
-        flavor: data["track_finding"]
+        flavor: data[config["flavors"][flavor]["points"]]
         for flavor, data in data_per_algorithm_per_flavor.items()
     }
 

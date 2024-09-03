@@ -5,6 +5,7 @@ dates:
 flavors:
   legacy_default:
     label: "Athena Space Point Formation"
+    points: space_point_formation
 
     piecewise_const: []
 
@@ -14,6 +15,7 @@ flavors:
 
   acts_default:
     label: "ACTS Space Point Formation"
+    points: space_point_formation
 
     piecewise_const: []
 
