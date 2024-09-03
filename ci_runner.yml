@@ -1,0 +1,51 @@
+.base-job:
+   before_script:
+     - apt-get update
+     
+     # install python and dependencies
+     - apt-get install -y python3 python3-pip python3-venv
+     - python3 -m venv venv
+     - source venv/bin/activate
+     - pip3 install -r requirements.txt
+
+fetcher-job:
+  image: ubuntu:24.04
+  extends: .base-job
+  artifacts:
+    paths:
+      - data
+    when: always
+    expire_in: 1 week
+    
+  script:
+    - python3 -m spotter.fetcher --config config/fetcher.yaml
+
+.base-plotter-job:
+  image: ubuntu:24.04
+  extends: .base-job
+  artifacts:
+    paths:
+      - plots
+    when: always
+    expire_in: 1 week
+  needs: [fetcher-job]
+      
+  script:
+    - python3 -m spotter.plotter --config config/$CONFIG
+
+plotter-clusterization-job:
+  extends: .base-plotter-job
+  variables:
+    CONFIG: plot-clusterization.yaml
+plotter-spacepointformation-job:
+  extends: .base-plotter-job
+  variables:
+    CONFIG: plot-spacepointformation.yaml
+plotter-seeding-job:
+  extends: .base-plotter-job
+  variables:
+    CONFIG: plot-seeding.yaml
+plotter-trackfinding-job:
+  extends: .base-plotter-job
+  variables:
+    CONFIG: plot-trackfinding.yaml

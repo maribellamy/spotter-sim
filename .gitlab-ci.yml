@@ -3,22 +3,6 @@ lint:
   script:
     - flake8 --verbose --ignore="E501,W503" .
 
-test:
-  image: ubuntu:24.04
-  artifacts:
-    paths:
-      - data
-      - plots
-    expire_in: 1 week
-  script:
-    - apt-get update
+include:
+  local: ci_runner.yml
 
-    # install python and dependencies
-    - apt-get install -y python3 python3-pip python3-venv
-    - python3 -m venv venv
-    - source venv/bin/activate
-    - pip3 install -r requirements.txt
-
-    # run fetching and plotting
-    - python3 -m spotter.fetcher
-    - python3 -m spotter.plotter
