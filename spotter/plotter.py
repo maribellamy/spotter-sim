@@ -15,6 +15,8 @@ import mplhep as hep
 from spotter.fitter import piecewise_const
 from spotter.utilities import date_range
 
+from matplotlib.ticker import MaxNLocator
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -125,13 +127,18 @@ def main():
     # ax.plot(acts_ckf_data["date"], acts_ckf_data["cpu"], ".--", label="Acts-based CKF")
 
     # ax.set_title("Track Finding CPU")
-    ax.set_ylabel("CPU time per event [s]")
+    ax.set_ylabel("CPU time per event [s]",fontsize=22)
     ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
+    ax.tick_params(axis='x', labelsize=20)
+    ax.tick_params(axis='y', labelsize=20)
 
     xmin, xmax = ax.get_xlim()
     ax.set_xlim(xmin, xmax + (xmax - xmin) * 0.03)
 
-    fig.subplots_adjust(left=0.05, right=0.99, top=0.9, bottom=0.1)
+    default_yticks = len(ax.get_yticks())  # Get current number of y ticks
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=default_yticks * 1.5))
+    
+    fig.subplots_adjust(left=0.08, right=0.99, top=0.9, bottom=0.25)
 
     ax.legend()
 
@@ -222,7 +229,7 @@ def main():
                     ha="left",
                     va="top",
                     ma="center",
-                    fontsize=10,
+                    fontsize=15,
                     minor=True,
                 )
                 compare_ax.tick_params(
