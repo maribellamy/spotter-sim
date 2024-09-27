@@ -127,7 +127,7 @@ def main():
     # ax.plot(acts_ckf_data["date"], acts_ckf_data["cpu"], ".--", label="Acts-based CKF")
 
     # ax.set_title("Track Finding CPU")
-    ax.set_ylabel("CPU time per event [s]",fontsize=22)
+    ax.set_ylabel("CPU time per event [s]", fontsize=22)
     ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=45, ha="right")
     ax.tick_params(axis='x', labelsize=20)
     ax.tick_params(axis='y', labelsize=20)
@@ -137,7 +137,6 @@ def main():
 
     default_yticks = len(ax.get_yticks())  # Get current number of y ticks
     ax.yaxis.set_major_locator(MaxNLocator(nbins=default_yticks * 1.5))
-    
     fig.subplots_adjust(left=0.08, right=0.99, top=0.9, bottom=0.25)
 
     ax.legend()
