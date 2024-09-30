@@ -1,6 +1,6 @@
 dates:
   start: "2024-03-01"
-  end: "2024-08-31"
+  end: "2024-09-28"
 
 flavors:
   legacy_default:
@@ -9,7 +9,7 @@ flavors:
 
     piecewise_const:
       - { start: "2023-07-09", end: "2024-02-29" }
-      - { start: "2024-03-01", end: "2024-08-31" }
+      - { start: "2024-03-01", end: "2024-09-28" }
 
     annotations: []
 
@@ -23,10 +23,9 @@ flavors:
       - { start: "2023-07-09", end: "2024-02-29" }
       - { start: "2024-03-01", end: "2024-03-04" }
       - { start: "2024-03-05", end: "2024-05-13" }
-      - { start: "2024-05-14", end: "2024-08-31" }
+      - { start: "2024-05-14", end: "2024-09-28" }
 
     annotations:
       - { date: "2024-05-15", text: "!71336 - Only use ACTS\nin SPOT workflow", alignment: "center", offset: [30, -50], select: False, label: "" }
 
     compare_to_other: []
-
