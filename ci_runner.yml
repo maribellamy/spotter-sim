@@ -49,3 +49,11 @@ plotter-trackfinding-job:
   extends: .base-plotter-job
   variables:
     CONFIG: plot-trackfinding.yaml
+plotter-ambiguity-job:
+  extends: .base-plotter-job
+  variables:
+    CONFIG: plot-ambiguity.yaml
+plotter-fullreco-job:
+  extends: .base-plotter-job
+  variables:
+    CONFIG: plot-full-reco-chain.yaml

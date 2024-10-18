@@ -1,6 +1,6 @@
 dates:
   start: "2023-01-01"
-  end: "2024-09-28"
+  end: "2024-10-17"
 
 step: "Execute"
 
@@ -13,7 +13,10 @@ flavors:
       - { name: "clusterization", sum: ["pixel_clusterization", "strip_clusterization"] }
       - { name: "space_point_formation", map: "ITkSiTrackerSpacePointFinder" }
       - { name: "track_finding", map: "ITkSiSpTrackFinder" }
-      - { name: "full_track_chain", sum: ["clusterization", "space_point_formation", "track_finding"]}
+      - { name: "ambiguity_solver", map: "ITkAmbiguitySolver" }
+      - { name: "ambiguity_score", map: "ITkAmbiguityScore" }
+      - { name: "ambiguity", sum: ["ambiguity_solver", "ambiguity_score"]}
+      - { name: "full_track_chain", sum: ["clusterization", "space_point_formation", "track_finding", "ambiguity"]}
 
   legacy_fast:
     tag: "fasttracking"
@@ -40,7 +43,8 @@ flavors:
       - { name: "seeding", sum: ["pixel_seeding", "strip_seeding"] }
       - { name: "ckf", map: ".*TrackFindingAlg" }
       - { name: "track_finding", sum: ["seeding", "ckf"] }
-      - { name: "full_track_chain", sum: ["region_creator", "clusterization", "space_point_formation", "seeding", "ckf"]}
+      - { name: "ambiguity", map: ".*AmbiguityResolutionAlg"}
+      - { name: "full_track_chain", sum: ["region_creator", "clusterization", "space_point_formation", "seeding", "ckf", "ambiguity"]}
 
   acts_fast:
     tag: "actsfasttracking"
