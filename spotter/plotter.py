@@ -38,6 +38,16 @@ def main():
         default="plots",
         help="Directory to store the plots",
     )
+    parser.add_argument(
+        "--show",
+        action="store_true",
+        help="Show the plots",
+    )
+    parser.add_argument(
+        "--hide-annotations",
+        action="store_true",
+        help="Hide the annotations",
+    )
     args = parser.parse_args()
 
     with open(args.config, "r") as f:
@@ -51,6 +61,9 @@ def main():
     annotations_per_flavor = {
         flavor: config["flavors"][flavor]["annotations"] for flavor in flavors
     }
+
+    if args.hide_annotations:
+        annotations_per_flavor = {}
 
     piecewise_edges = {
         flavor: list(
@@ -287,6 +300,9 @@ End date: 30 July 2024, Athena 25.0.11 (Acts v36.0.0)
 
     fig.savefig(args.plots_dir / "mem.png")
     fig.savefig(args.plots_dir / "mem.pdf")
+
+    if args.show:
+        plt.show()
 
 
 if __name__ == "__main__":

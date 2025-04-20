@@ -1,5 +1,6 @@
 from datetime import date
 from concurrent.futures import ThreadPoolExecutor
+import itertools
 import urllib.request
 from urllib.error import HTTPError
 import argparse
@@ -24,26 +25,31 @@ def get_url(*, d: date, flavor: str) -> str:
     return f"{base}/{date_str}-{binary}-{job}"
 
 
-def do_fetch(data: SpotData) -> None:
+def do_fetch(data: SpotData, retries: int) -> None:
     assert isinstance(data, SpotData)
+    assert isinstance(retries, int)
 
-    def load(u: str) -> None | str:
+    def load(u: str, retries: int) -> None | str:
         assert isinstance(u, str)
-        try:
-            return urllib.request.urlopen(u).read().decode("utf-8")
-        except HTTPError as e:
-            print(d, u, e)
+        assert isinstance(retries, int)
+        for _ in range(retries):
+            try:
+                return urllib.request.urlopen(u).read().decode("utf-8")
+            except HTTPError as e:
+                print(d, u, e)
         return None
 
     d: date = data.date
     for flavor, config in data.spot_configs.items():
-        data.add_data(flavor=flavor, data=load(get_url(d=d, flavor=config.tag)))
+        url = get_url(d=d, flavor=config.tag)
+        data.add_data(flavor=flavor, data=load(url, retries=retries))
 
 
-def do_fetch_all(*, data: list[SpotData]) -> None:
+def do_fetch_all(*, data: list[SpotData], retries: int) -> None:
     assert isinstance(data, list)
+    assert isinstance(retries, int)
     with ThreadPoolExecutor() as tp:
-        tp.map(do_fetch, data)
+        tp.map(do_fetch, data, itertools.repeat(retries))
 
 
 def main():
@@ -90,7 +96,7 @@ def main():
         spot_data.append(data)
 
     # Fetch the log files
-    do_fetch_all(data=spot_data)
+    do_fetch_all(data=spot_data, retries=3)
     data_per_algorithm_per_flavor: dict[
         str, dict[str, dict[str, date | pd.DataFrame]]
     ] = extract_all_points(spot_data)
