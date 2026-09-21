@@ -114,7 +114,8 @@ flavors:
       - { name: "full_track_chain_lrt", sum: ["full_track_chain", "lrt"] }
 
   # the full ACTS configuration (pixel and strip seeding, ambiguity resolution)
-  # actstracking until 2025-05-08, then actstrackinglegacy (with the ActsLegacy prefix) until 2026-08-10
+  # actstracking until 2025-05-08, then actstrackinglegacy (with the ActsLegacy prefix)
+  # discontinued, the last log is from 2026-08-10
   # LRT starts on 2026-03-05; its algorithms have the prefix LargeD0 from 2026-05-28 to 2026-07-12
   acts_legacy:
     sources:
