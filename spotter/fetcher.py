@@ -1,5 +1,6 @@
 import re
 from datetime import date, datetime
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 import itertools
 import urllib.request
@@ -9,9 +10,8 @@ import argparse
 from pathlib import Path
 import yaml
 import pandas as pd
-from spotter.parser import extract_all_points
+from spotter.parser import parse_spot, extract_points_per_algorithm, is_masked
 from spotter.utilities import date_range
-from spotter.spot_data_config import SpotConfig, SpotData
 
 
 BASE_URL = "https://atlaspmb.web.cern.ch/atlaspmb"
@@ -48,36 +48,131 @@ def get_log_index(*, tag: str) -> dict[date, str]:
     return {d: u for d, (_, u) in candidates.items()}
 
 
-def do_fetch(data: SpotData, retries: int, indices: dict[str, dict[date, str]]) -> None:
-    assert isinstance(data, SpotData)
+def load_log(url: str, retries: int) -> str | None:
+    assert isinstance(url, str)
     assert isinstance(retries, int)
-
-    def load(u: str, retries: int) -> None | str:
-        assert isinstance(u, str)
-        assert isinstance(retries, int)
-        for _ in range(retries):
-            try:
-                return urllib.request.urlopen(u, timeout=120).read().decode("utf-8")
-            except (URLError, TimeoutError, IncompleteRead) as e:
-                print(d, u, e)
-        return None
-
-    d: date = data.date
-    for flavor, config in data.spot_configs.items():
-        url = indices[config.tag].get(d)
-        data.add_data(flavor=flavor, data=None if url is None else load(url, retries))
+    for _ in range(retries):
+        try:
+            return urllib.request.urlopen(url, timeout=120).read().decode("utf-8")
+        except (URLError, TimeoutError, IncompleteRead) as e:
+            print(url, e)
+    return None
 
 
-def do_fetch_all(*, data: list[SpotData], retries: int) -> None:
-    assert isinstance(data, list)
-    assert isinstance(retries, int)
-    tags = {c.tag for sd in data for c in sd.spot_configs.values()}
-    indices = {tag: get_log_index(tag=tag) for tag in tags}
-    for tag, index in indices.items():
-        print(f"{tag}: {len(index)} logs available")
-    with ThreadPoolExecutor() as tp:
-        # consume the results so that exceptions in the workers are raised
-        list(tp.map(do_fetch, data, itertools.repeat(retries), itertools.repeat(indices)))
+def raw_paths(raw_dir: Path, tag: str) -> tuple[Path, Path]:
+    """Return the paths of the raw table and of the log table for a SPOT tag.
+
+    The raw table has one row for each component of each downloaded log.
+    The log table has one row for each downloaded log, also if the log has no
+    PerfMonMTSvc summary, so that the next run does not download it again.
+    """
+    return raw_dir / f"{tag}.csv", raw_dir / f"{tag}_logs.csv"
+
+
+def download(
+    *, tag: str, dates: list[date], step: str, raw_dir: Path, retries: int, refetch: bool
+) -> None:
+    """Download the logs of a SPOT tag that are not in the raw table yet."""
+    raw_path, logs_path = raw_paths(raw_dir, tag)
+    if raw_path.exists() and logs_path.exists() and not refetch:
+        raw = pd.read_csv(raw_path, parse_dates=["date"])
+        logs = pd.read_csv(logs_path, parse_dates=["date"])
+        raw["date"] = raw["date"].dt.date
+        logs["date"] = logs["date"].dt.date
+    else:
+        raw = pd.DataFrame(columns=["date", "step", "component", "count", "cpu", "vmem", "malloc"])
+        logs = pd.DataFrame(columns=["date", "url", "components"])
+
+    index = get_log_index(tag=tag)
+    missing = [(d, index[d]) for d in dates if d in index and d not in set(logs["date"])]
+    print(f"{tag}: {len(index)} logs available, {len(missing)} to download")
+    if len(missing) == 0:
+        return
+
+    def work(job: tuple[date, str]) -> tuple[date, str, pd.DataFrame] | None:
+        d, url = job
+        txt = load_log(url, retries)
+        if txt is None:
+            return None
+        components = parse_spot(txt)
+        components = components[components["step"] == step]
+        components.insert(0, "date", d)
+        return d, url, components
+
+    new_raw = []
+    new_logs = []
+    with ThreadPoolExecutor(16) as tp:
+        for i, result in enumerate(tp.map(work, missing), start=1):
+            if result is not None:
+                d, url, components = result
+                new_raw.append(components)
+                new_logs.append({"date": d, "url": url, "components": len(components)})
+            if i % 100 == 0 or i == len(missing):
+                print(f"{tag}: {i}/{len(missing)} downloaded")
+
+    failed = len(missing) - len(new_logs)
+    if failed > 0:
+        print(f"{tag}: {failed} logs failed, the next run tries them again")
+
+    raw = pd.concat([df for df in [raw, *new_raw] if len(df) > 0], ignore_index=True)
+    logs = pd.concat([logs, pd.DataFrame(new_logs)], ignore_index=True)
+    raw = raw.sort_values(["date", "step", "component"], kind="stable")
+    logs = logs.sort_values("date")
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    raw.to_csv(raw_path, index=False)
+    logs.to_csv(logs_path, index=False)
+
+
+def get_sources(flavor_config: dict) -> list[dict]:
+    """Return the SPOT tags of a flavor with their date ranges.
+
+    A flavor has either one `tag` for all dates, or a list of `sources`. Each
+    source has a `tag` and an optional `start` and `end` (both inclusive).
+    With sources, a flavor can follow one configuration when it moves from
+    one SPOT job to another.
+    """
+    if "tag" in flavor_config:
+        assert "sources" not in flavor_config
+        return [{"tag": flavor_config["tag"]}]
+    sources = flavor_config["sources"]
+    for a, b in itertools.combinations(sources, 2):
+        a_start = a.get("start", "0000-00-00")
+        a_end = a.get("end", "9999-99-99")
+        b_start = b.get("start", "0000-00-00")
+        b_end = b.get("end", "9999-99-99")
+        if a_start <= b_end and b_start <= a_end:
+            raise ValueError(f"Sources overlap: {a} and {b}")
+    return sources
+
+
+def extract(
+    *, flavor: str, flavor_config: dict, dates: list[date], step: str, raw_dir: Path
+) -> dict[str, pd.DataFrame]:
+    """Compute the points of a flavor from the raw tables of its SPOT tags."""
+    raws = []
+    for source in get_sources(flavor_config):
+        raw_path, _ = raw_paths(raw_dir, source["tag"])
+        raw = pd.read_csv(raw_path, parse_dates=["date"])
+        raw["date"] = raw["date"].dt.date
+        in_range = [d for d in dates if is_masked(d, [source])]
+        raw = raw[(raw["step"] == step) & raw["date"].isin(set(in_range))]
+        raw.insert(1, "tag", source["tag"])
+        raws.append(raw)
+    raw = pd.concat(raws, ignore_index=True)
+
+    points_per_algorithm = defaultdict(list)
+    for (d, tag), components in raw.groupby(["date", "tag"]):
+        if is_masked(d, flavor_config.get("mask", [])):
+            continue
+        points = extract_points_per_algorithm(d, components, flavor_config["points"])
+        for algorithm, point in points.items():
+            points_per_algorithm[algorithm].append({**point, "tag": tag})
+
+    result = {}
+    for algorithm, points in points_per_algorithm.items():
+        result[algorithm] = pd.DataFrame(points).dropna()
+    print(f"{flavor}: {raw['date'].nunique()} dates, {len(result)} points")
+    return result
 
 
 def main():
@@ -94,6 +189,16 @@ def main():
         default="data",
         help="Directory to store the data",
     )
+    parser.add_argument(
+        "--skip-download",
+        action="store_true",
+        help="Do not download logs, only compute the points from the raw tables",
+    )
+    parser.add_argument(
+        "--refetch",
+        action="store_true",
+        help="Download all logs again, also the logs that are in the raw tables",
+    )
     args = parser.parse_args()
 
     with open(args.config, "r") as f:
@@ -101,39 +206,35 @@ def main():
 
     start_date = date.fromisoformat(config["dates"]["start"])
     end_date = date.fromisoformat(config["dates"]["end"])
-    date_list = date_range(start_date, end_date)
-
-    flavors: list[str] = list(config["flavors"].keys())
+    dates = date_range(start_date, end_date)
     step: str = config["step"]
+    raw_dir: Path = args.data_dir / "raw"
 
-    spot_configs: list[SpotConfig] = []
-    for flavor in flavors:
-        spot_configs.append(
-            SpotConfig(
-                flavor,
-                config["flavors"][flavor]["tag"],
-                config["flavors"][flavor]["points"],
-            )
+    if not args.skip_download:
+        tags = sorted(
+            {s["tag"] for c in config["flavors"].values() for s in get_sources(c)}
         )
-
-    spot_data: list[SpotData] = []
-    for d in date_list:
-        data = SpotData(d, step)
-        for conf in spot_configs:
-            data.add_spot_config(spot_config=conf)
-        spot_data.append(data)
-
-    # Fetch the log files
-    do_fetch_all(data=spot_data, retries=3)
-    data_per_algorithm_per_flavor: dict[
-        str, dict[str, dict[str, date | pd.DataFrame]]
-    ] = extract_all_points(spot_data)
+        for tag in tags:
+            download(
+                tag=tag,
+                dates=dates,
+                step=step,
+                raw_dir=raw_dir,
+                retries=3,
+                refetch=args.refetch,
+            )
 
     args.data_dir.mkdir(parents=True, exist_ok=True)
-
-    for flavor, data_per_algorithm in data_per_algorithm_per_flavor.items():
-        for algorithm, data in data_per_algorithm.items():
-            data.to_csv(f"{args.data_dir}/{flavor}_{algorithm}.csv", index=False)
+    for flavor, flavor_config in config["flavors"].items():
+        points_per_algorithm = extract(
+            flavor=flavor,
+            flavor_config=flavor_config,
+            dates=dates,
+            step=step,
+            raw_dir=raw_dir,
+        )
+        for algorithm, data in points_per_algorithm.items():
+            data.to_csv(args.data_dir / f"{flavor}_{algorithm}.csv", index=False)
 
 
 if __name__ == "__main__":

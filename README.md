@@ -20,5 +20,20 @@ python -m spotter.plotter
 
 Afterwards you should find a couple of PNG and PDF files in the current working directory.
 
+The fetcher has two steps:
+
+1. The download step reads the log index of each SPOT job and downloads the logs that are not in `data/raw/` yet. `data/raw/<tag>.csv` has one row for each component of each log, and `data/raw/<tag>_logs.csv` has one row for each downloaded log.
+2. The extract step computes the points of each flavor from the raw tables and writes `data/<flavor>_<point>.csv`.
+
+```bash
+# only compute the points again, for example after a change to a mask
+python -m spotter.fetcher --skip-download
+
+# download all logs again, for example after a change to the step
+python -m spotter.fetcher --refetch
+```
+
+`config/fetcher.yaml` explains the `map`, `sum`, `optional`, `mask` and `sources` options.
+
 Example:
 ![CPU annotated](plots/cpu_annotated.png)
