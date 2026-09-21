@@ -1,0 +1,122 @@
+# Annotations for all plots.
+#
+# Each annotation has a `date` (the first nightly that shows the change), a
+# `text`, the `flavors` and the `points` that it affects. A plot shows an
+# annotation if the flavor and the point of a plotted line match. A plot of
+# track_finding also shows the annotations of ckf and seeding, and a plot of
+# lrt also shows the annotations of lrt_seeding and lrt_ckf (see the plotter).
+#
+# `select` and `label` add the annotation to the relative comparison plot.
+#
+# Nightly D contains the merges into athena main up to about 21:00 Zurich time
+# on day D. The platform changes (for example el9-gcc13 on 2024-02-27) and the
+# changes of the SPOT machine come from the data, so they are not in this file.
+# The machine explains the infrastructure steps: aiatlasbm006 is about 20-25%
+# faster than aiatlasbm001 (2024-02-27 to 006, 2025-11-06 to 001, 2026-07-21 to 006).
+#
+# The MRs were checked against the athena history. `(unclear)` marks an
+# annotation with low confidence.
+
+acts_both: &acts_both [acts_default, acts_legacy]
+acts_all: &acts_all [acts_default, acts_fast, acts_legacy]
+acts_default_fast: &acts_default_fast [acts_default, acts_fast]
+legacy_all: &legacy_all [legacy_default, legacy_fast]
+all: &all [legacy_default, legacy_fast, acts_default, acts_fast, acts_legacy]
+
+annotations:
+  # 2023: legacy tracking and first ACTS steps
+  - { date: "2023-07-16", text: "!64289 - DataPool in SiTrackerSpacePointFinder", flavors: *legacy_all, points: [space_point_formation] }
+  - { date: "2023-08-25", text: "!65281 - Fast tracking low-pT resolution", flavors: [legacy_fast], points: [track_finding, full_track_chain] }
+  - { date: "2023-08-30", text: "!65419 - Revert fast seeding changes", flavors: [legacy_fast], points: [track_finding, full_track_chain] }
+  - { date: "2023-08-30", text: "!64452 - ElementLinks in ACTS space points", flavors: *acts_both, points: [space_point_formation] }
+  - { date: "2023-09-05", text: "!65550 - Fix ITk boundary intersect", flavors: *legacy_all, points: [track_finding, ambiguity, full_track_chain] }
+  - { date: "2023-11-08", text: "!66631 - Switch ACTS tracking to Athena backends", flavors: *acts_both, points: [ckf, ambiguity, full_track_chain] }
+  - { date: "2023-11-13", text: "!66992, !67034 - EDM changes; !67002 - ACTS ambiguity workflow", flavors: *acts_both, points: [ckf, ambiguity] }
+  - { date: "2023-11-24", text: "!66813 - KF on seeds", flavors: *acts_both, points: [ckf, ambiguity, full_track_chain] }
+  - { date: "2023-11-29", text: "!67323 - Aux in MTJ", flavors: *acts_both, points: [ckf, ambiguity, full_track_chain] }
+
+  # 2024: ACTS CKF optimisation
+  - { date: "2024-02-01", text: "!68143 - Bare pointers in ACTS space points", flavors: *acts_both, points: [space_point_formation] }
+  - { date: "2024-02-08", text: "!67296 - Accidentally deployed fast tracking config", flavors: *acts_both, points: [ckf, pixel_seeding, ambiguity, full_track_chain] }
+  - { date: "2024-02-15", text: "!68800 - Fast tracking config restored", flavors: *acts_both, points: [ckf, pixel_seeding, ambiguity, full_track_chain], select: true, label: "Ready for optimisation" }
+  - { date: "2024-03-13", text: "!69716 - OnTrackCalibrator in the CKF", flavors: *acts_both, points: [ckf] }
+  - { date: "2024-03-18", text: "!69856 - Reduce branching from 3 to 1", flavors: *acts_both, points: [ckf, ambiguity, full_track_chain], select: true, label: "Reduce branches" }
+  - { date: "2024-04-03", text: "CKF +33% for two nightlies (unclear, maybe !69793)", flavors: *acts_both, points: [ckf] }
+  - { date: "2024-04-05", text: "!70171 - Extend tracks in both directions", flavors: *acts_both, points: [ckf, ambiguity, full_track_chain], select: true, label: "Bi-directional track finding" }
+  - { date: "2024-04-13", text: "!70487 - std::unordered_multimap instead of boost::flat_multimap", flavors: *acts_both, points: [ckf, full_track_chain], select: true, label: "EDM optimisation" }
+  - { date: "2024-04-23", text: "!70375 - ACTS EDM backend during CKF", flavors: *acts_both, points: [ckf, full_track_chain], select: true, label: "EDM optimisation" }
+  - { date: "2024-04-30", text: "!70940 - Stop branches on holes and outliers", flavors: *acts_both, points: [ckf, ambiguity, full_track_chain], select: true, label: "Use of branch stoppers" }
+  - { date: "2024-05-14", text: "!71336 - Only use ACTS in SPOT workflow", flavors: *acts_both, points: [clusterization, ambiguity] }
+  - { date: "2024-05-17", text: "!71469 - Bare pointers instead of ElementLinks", flavors: *acts_both, points: [ckf], select: true, label: "EDM optimisation" }
+  - { date: "2024-05-24", text: "!71683 - Disable KF on seeds", flavors: *acts_both, points: [ckf, full_track_chain], select: true, label: "Disabling fitting of seeds" }
+  - { date: "2024-05-27", text: "!71687, !71693 - Keep stopped CKF branches, ambiguity hash fix", flavors: *acts_both, points: [ambiguity, reco_efficiency] }
+  - { date: "2024-06-05", text: "!71789 - Enable analog clustering", flavors: *acts_both, points: [ckf, full_track_chain] }
+  - { date: "2024-07-02", text: "!72610 - Faster measurement selector", flavors: *acts_both, points: [ckf, full_track_chain] }
+  - { date: "2024-07-08", text: "!72881 - Calibrate only selected measurements", flavors: *acts_both, points: [ckf, full_track_chain], select: true, label: "Measurement selector\noptimisation" }
+  - { date: "2024-08-23", text: "!72932 - SympyStepper", flavors: *acts_both, points: [ckf], select: true, label: "Stepper optimization" }
+  - { date: "2024-09-28", text: "!74586 - ACTS v36.3.2 (sympy jacobians)", flavors: *acts_both, points: [ckf], select: true, label: "Stepper optimization" }
+  - { date: "2024-11-09", text: "!75669 - ACTS fast pass CKF config", flavors: [acts_fast], points: [ckf, reco_efficiency] }
+
+  # 2025: clustering speed-ups, fast configuration becomes the default
+  - { date: "2025-01-06", text: "!76491 - Detector element status instead of conditions summary tool", flavors: *all, points: [clusterization, ambiguity, track_finding, full_track_chain] }
+  - { date: "2025-02-15", text: "!77820 - SPOT fast ACTS job uses fast workflow flags", flavors: [acts_fast], points: [ckf, full_track_chain, reco_efficiency] }
+  - { date: "2025-02-19", text: "!77928 - Pixel readout manager refactor", flavors: *acts_all, points: [clusterization] }
+  - { date: "2025-02-19", text: "!77931 - Faster aux store access in the ACTS EDM", flavors: *acts_both, points: [ambiguity] }
+  - { date: "2025-02-26", text: "!78082 - Pixel calibration speed-up", flavors: *acts_all, points: [clusterization] }
+  - { date: "2025-02-28", text: "!78156 - Pixel clustering speed-up", flavors: *acts_all, points: [clusterization] }
+  - { date: "2025-05-09", text: "!79469 - ACTS fast configuration becomes the default", flavors: [acts_default], points: [ckf, pixel_seeding, ambiguity, space_point_formation, full_track_chain, reco_efficiency] }
+  - { date: "2025-06-23", text: "!80814 - Fast tracking pT min 900 MeV", flavors: [acts_default, acts_fast, legacy_fast], points: [ckf, ambiguity, track_finding, full_track_chain, reco_efficiency] }
+  - { date: "2025-06-30", text: "!81003 - Strip clustering speed-up", flavors: *acts_all, points: [clusterization] }
+  - { date: "2025-07-07", text: "!81115 - Rewrite ACTS clustering logic", flavors: *acts_all, points: [clusterization, full_track_chain] }
+  - { date: "2025-07-09", text: "!80953 - Increase the CKF chi2 cut", flavors: *acts_default_fast, points: [reco_efficiency] }
+  - { date: "2025-07-12", text: "!81264 - Seed deduplication cut N-1 hits", flavors: *acts_all, points: [ckf, ambiguity, full_track_chain] }
+  - { date: "2025-07-21", text: "!81342 - Tune ACTS seed configuration for speed", flavors: *acts_default_fast, points: [pixel_seeding, ckf, full_track_chain] }
+  - { date: "2025-07-24", text: "!81287 - Ambiguity resolution moved into the CKF", flavors: *acts_default_fast, points: [ambiguity, ckf] }
+  - { date: "2025-07-30", text: "!81419 - Faster pixel front-end lookup", flavors: [acts_default, acts_fast, acts_legacy, legacy_default], points: [clusterization] }
+  - { date: "2025-07-31", text: "!81396 - Optimize ACTS ITk surface array", flavors: *acts_all, points: [ckf] }
+  - { date: "2025-08-05", text: "!81573 - Transient ACTS tracks without xAOD", flavors: [acts_legacy], points: [ambiguity] }
+  - { date: "2025-08-08", text: "!81720 - ACTS v43.0.0", flavors: *acts_all, points: [ckf] }
+  - { date: "2025-09-05", text: "!81546 - LRT pass; bug: legacy pixel seeds lost", flavors: [acts_legacy], points: [ckf, pixel_seeding, ambiguity, full_track_chain, reco_efficiency] }
+  - { date: "2025-09-08", text: "!82490 - ACTS seeding to GridTriplet", flavors: *acts_all, points: [pixel_seeding, full_track_chain] }
+  - { date: "2025-09-12", text: "!82608 - Fix of the ACTS legacy configuration", flavors: [acts_legacy], points: [ckf, pixel_seeding, ambiguity, full_track_chain, reco_efficiency] }
+  - { date: "2025-10-10", text: "!83333 - ACTS v44.0.1", flavors: *acts_all, points: [ckf] }
+  - { date: "2025-10-14", text: "!83437 - Granular surface grids", flavors: *acts_all, points: [ckf] }
+  - { date: "2025-11-18", text: "!84326 - Pixel FE number from module design", flavors: *legacy_all, points: [clusterization] }
+
+  # 2026: LRT, new input, GBTS
+  - { date: "2026-02-17", text: "Strip seeding -9% (unclear, no tracking MR; release 25.0.53)", flavors: [acts_legacy], points: [strip_seeding] }
+  - { date: "2026-03-05", text: "!86476 - LRT activated in SPOT", flavors: *acts_all, points: [lrt, full_track_chain_lrt] }
+  - { date: "2026-03-05", text: "!86481 - SPOT input with geometry ATLAS-P2-RUN4-04", flavors: *legacy_all, points: [clusterization, full_track_chain] }
+  - { date: "2026-03-06", text: "!86485 - SPOT input with geometry ATLAS-P2-RUN4-04", flavors: *acts_all, points: [clusterization, full_track_chain, reco_efficiency] }
+  - { date: "2026-03-13", text: "!86700 - LRT CKF auto reverse search", flavors: *acts_all, points: [lrt_ckf] }
+  - { date: "2026-03-27", text: "!86895 - ACTS v46.0.0 (strip seeding speed-up)", flavors: *acts_all, points: [lrt_seeding, strip_seeding] }
+  - { date: "2026-04-21", text: "!87384 - LRT strip seeding geometric filters", flavors: *acts_all, points: [lrt_ckf, lrt_seeding] }
+  - { date: "2026-04-30", text: "!87658 - LRT seed confirmation tuning", flavors: *acts_all, points: [lrt_ckf] }
+  - { date: "2026-05-05", text: "!87667 - LRT cot theta filter, sorted triplets", flavors: *acts_all, points: [lrt_seeding, lrt_ckf, strip_seeding] }
+  - { date: "2026-05-06", text: "!87802 - SPOT tracking job adds trigger simulation", flavors: [legacy_default], points: [clusterization, full_track_chain] }
+  - { date: "2026-05-25", text: "!88221 - Strip SP calibration in parameter estimation", flavors: *acts_all, points: [lrt_ckf] }
+  - { date: "2026-07-21", text: "!89434 - LRT doublet dPhi cut", flavors: *acts_all, points: [lrt_seeding] }
+  - { date: "2026-07-28", text: "!89555 - d0 seed and track cut 2 -> 5 mm", flavors: *all, points: [pixel_seeding, ckf, ambiguity, track_finding, full_track_chain, reco_efficiency] }
+  - { date: "2026-07-29", text: "!89722 - LRT CPU improvements", flavors: *acts_all, points: [lrt_seeding] }
+  - { date: "2026-08-10", text: "!90069 - ActsLegacy SPOT job removed (last nightly)", flavors: [acts_legacy], points: [full_track_chain, ckf, pixel_seeding] }
+  - { date: "2026-08-17", text: "!90183 - No CKF material track states", flavors: *acts_default_fast, points: [ckf, full_track_chain] }
+  - { date: "2026-08-27", text: "!90141 - ACTS tracking on by default (last legacy nightly)", flavors: *legacy_all, points: [track_finding, full_track_chain, clusterization, space_point_formation, ambiguity] }
+  - { date: "2026-09-14", text: "!90704 - GBTS pixel seeding by default", flavors: *acts_default_fast, points: [pixel_seeding, ckf, full_track_chain] }
+
+# Public results and the last nightly that they contain. A plot shows each
+# reference as a dashed line at `date`.
+references:
+  # "The starting date for the plot is 15 February 2024, using Athena 24.0.24
+  # (ACTS v32.0.2)"; "The last data point on the plot corresponds to the running
+  # time obtained on 10 September 2024" (Athena 25.0.16, ACTS v36.2.1)
+  - date: "2024-09-10"
+    name: "ATL-PHYS-PUB-2024-017"
+    range: "2024-02-15 to 2024-09-10, Athena 24.0.24 to 25.0.16"
+    url: "https://cds.cern.ch/record/2912217"
+  # figure: "End date: October 2025, Athena 25.0.44 (ACTS v44.0.1)"; 25.0.44 is
+  # in main from nightly 2025-10-15, and the x axis of the figure ends at about
+  # 2025-10-15 (read from the figure, +-2 days)
+  - date: "2025-10-15"
+    name: "PLOTS-IDTR-2025-06"
+    range: "2024-09 to about 2025-10-15, Athena 25.0.16 to 25.0.44, fast configuration, HS23 x s"
+    url: "https://atlas.web.cern.ch/Atlas/GROUPS/PHYSICS/PLOTS/IDTR-2025-06/"

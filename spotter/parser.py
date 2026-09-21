@@ -1,7 +1,5 @@
 import re
 from datetime import date
-from collections import defaultdict
-from spotter.spot_data_config import SpotData
 
 import pandas as pd
 
@@ -9,7 +7,8 @@ import pandas as pd
 def parse_spot(txt: str) -> pd.DataFrame:
     assert isinstance(txt, str)
     p = re.compile(
-        r"\d\d:\d\d:\d\d PerfMonMTSvc\s+INFO (\w+?)\s+(\d+)\s+(\d+(?:\.\d*)?)\s+(\d+(?:\.\d*)?)\s+(\d+(?:\.\d*)?)\s+(.+)"
+        # vmem and malloc can be negative, for example if an algorithm frees memory
+        r"\d\d:\d\d:\d\d PerfMonMTSvc\s+INFO (\w+?)\s+(\d+)\s+(\d+(?:\.\d*)?)\s+(-?\d+(?:\.\d*)?)\s+(-?\d+(?:\.\d*)?)\s+(.+)"
     )
     columns = ["step", "count", "cpu", "vmem", "malloc", "component"]
     data: list[tuple[str]] = []
@@ -24,6 +23,62 @@ def parse_spot(txt: str) -> pd.DataFrame:
     result[["count"]] = result[["count"]].astype(int)
     result[["cpu", "vmem", "malloc"]] = result[["cpu", "vmem", "malloc"]].astype(float)
     return result
+
+
+VALIDATION_TABLES = {
+    "Hit efficiency": "hit_efficiency",
+    "Hit purity": "hit_purity",
+    "Match probability": "match_probability",
+    "Reco efficiency": "reco_efficiency",
+}
+
+
+def parse_validation(txt: str) -> pd.DataFrame:
+    """Read the summary tables of the ACTS track finding validation algorithms.
+
+    Each algorithm (for example ActsTracksTrackFindingValidationAlg) prints
+    tables of the hit efficiency, the hit purity, the match probability and the
+    reco efficiency in bins of eta and pT, and a table of counts. The result
+    keeps the "All pt" column, the "All eta" row and the counts, with the
+    columns alg, table, eta, pt and value.
+    """
+    assert isinstance(txt, str)
+    time = re.compile(r"^\d\d:\d\d:\d\d ")
+    alg_line = re.compile(r"^(\w+ValidationAlg)\s+INFO")
+    rows = []
+    alg = table = None
+    header: list[str] = []
+    for line in txt.splitlines():
+        line = time.sub("", line)
+        m = alg_line.match(line)
+        if m:
+            alg, table = m.group(1), None
+            continue
+        if alg is None:
+            continue
+        title = line.split(" :")[0].strip()
+        if title in VALIDATION_TABLES:
+            table = VALIDATION_TABLES[title]
+            continue
+        if not line.startswith("|") or line.startswith("|-"):
+            if line.strip() and not line.startswith("|"):
+                # any other text ends the output of the algorithm
+                alg = table = None
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if cells[0].startswith("eta"):
+            header = cells[1:]
+        elif len(cells) == 2:
+            try:
+                rows.append((alg, "counts", cells[0], "", float(cells[1])))
+            except ValueError:
+                pass
+        elif table is not None and len(cells) == len(header) + 1:
+            eta = cells[0]
+            for pt, value in zip(header, cells[1:]):
+                if eta == "All eta" or pt == "All pt":
+                    rows.append((alg, table, eta, pt, float(value)))
+    return pd.DataFrame(rows, columns=["alg", "table", "eta", "pt", "value"])
 
 
 def zero_point(d: date) -> dict[str, date | float]:
@@ -72,6 +127,21 @@ def sum_points(*points: dict[str, date | float]) -> dict[str, date | float]:
     }
 
 
+def is_masked(d: date, masks: list[dict]) -> bool:
+    """Return True if a mask covers the date.
+
+    A mask has an optional `start` and an optional `end` (both inclusive),
+    and a `reason`. A missing `start` or `end` leaves that side open.
+    """
+    assert isinstance(d, date)
+    for mask in masks:
+        start = date.fromisoformat(mask["start"]) if "start" in mask else date.min
+        end = date.fromisoformat(mask["end"]) if "end" in mask else date.max
+        if start <= d <= end:
+            return True
+    return False
+
+
 def extract_points_per_algorithm(
     d: date, data: pd.DataFrame, points_mapping: list
 ) -> dict[str, dict[str, date | float]]:
@@ -83,13 +153,22 @@ def extract_points_per_algorithm(
         r = data[data["component"].str.contains(name)]
         if len(r) == 0:
             return null_point(d)
+        if len(r) > 1:
+            raise ValueError(
+                f"{d}: '{name}' matches more than one component: {list(r['component'])}"
+            )
         return convert_point(d, r)
+
+    # an optional point does not exist on all dates (or has a mask), so a sum counts it as zero there
+    optional = {p["name"] for p in points_mapping if p.get("optional", False)}
 
     points_per_algorithm = {}
     for point_mapping in points_mapping:
         name = point_mapping["name"]
 
-        if "map" in point_mapping:
+        if is_masked(d, point_mapping.get("mask", [])):
+            point = null_point(d)
+        elif "map" in point_mapping:
             point = extract_one(d, data, point_mapping["map"])
         elif "sum" in point_mapping:
             points = []
@@ -98,6 +177,8 @@ def extract_points_per_algorithm(
                     point = points_per_algorithm[n]
                 else:
                     point = extract_one(d, data, n)
+                if n in optional and pd.isna(point["cpu"]):
+                    point = zero_point(d)
                 points.append(point)
             point = sum_points(*points)
         else:
@@ -106,59 +187,3 @@ def extract_points_per_algorithm(
         points_per_algorithm[name] = point
 
     return points_per_algorithm
-
-
-def extract_points_per_algorithm_per_flavor(
-    data: SpotData,
-) -> dict[str, dict[str, date | float | None]]:
-    assert isinstance(data, SpotData)
-
-    data_per_algorithm_per_flavor = {}
-    for flavor, log_text in data.data.items():
-        if log_text is None:
-            continue
-        # Take the summary
-        summary_algos: pd.DataFrame = parse_spot(log_text)
-        if len(summary_algos) == 0:
-            continue
-
-        # Take the step we need
-        spot_exec_data: pd.DataFrame = summary_algos[summary_algos["step"] == data.step]
-        if len(spot_exec_data) == 0:
-            continue
-
-        # Take the algo we need
-        points_per_algorithm = extract_points_per_algorithm(
-            data.date, spot_exec_data, data.get_points(flavor=flavor)
-        )
-        data_per_algorithm_per_flavor[flavor] = points_per_algorithm
-    return data_per_algorithm_per_flavor
-
-
-def extract_all_points(
-    data: list[SpotData],
-) -> dict[str, dict[str, dict[str, date | pd.DataFrame]]]:
-    assert isinstance(data, list)
-
-    flavors = data[0].data.keys()
-    data_per_algorithm_per_flavor = {flavor: defaultdict(list) for flavor in flavors}
-
-    for sd in data:
-        assert isinstance(sd, SpotData)
-        points_per_algorithm_per_flavor = extract_points_per_algorithm_per_flavor(sd)
-
-        for flavor, points_per_flavor in points_per_algorithm_per_flavor.items():
-            for algorithm, point in points_per_flavor.items():
-                data_per_algorithm_per_flavor[flavor][algorithm].append(point)
-
-    for flavor, data_per_algorithm in data_per_algorithm_per_flavor.items():
-        for algorithm in data_per_algorithm:
-            data_per_algorithm[algorithm] = pd.DataFrame(
-                data_per_algorithm[algorithm]
-            ).dropna()
-            d = data_per_algorithm[algorithm]
-
-            d["date"] = pd.to_datetime(d["date"])
-            d.index = d["date"]
-
-    return data_per_algorithm_per_flavor

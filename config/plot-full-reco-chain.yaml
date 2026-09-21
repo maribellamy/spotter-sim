@@ -1,6 +1,17 @@
+title: "Full track reconstruction chain"
+log_y: true
+
 dates:
   start: "2024-07-15"
-  end: "2025-04-18"
+  end: "2026-09-21"
+
+# quiet periods: threshold 0.05, at least 60 days, margin 14 days
+axis_cuts:
+  - { start: "2024-10-17", end: "2024-12-02" }
+  - { start: "2025-02-26", end: "2025-04-24" }
+  - { start: "2025-11-20", end: "2026-02-02" }
+  - { start: "2026-03-20", end: "2026-04-22" }
+  - { start: "2026-05-20", end: "2026-06-21" }
 
 flavors:
   legacy_default:

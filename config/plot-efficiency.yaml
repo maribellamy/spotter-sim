@@ -1,0 +1,31 @@
+title: "Track reconstruction efficiency"
+metric: value
+ylabel: "Reconstruction efficiency"
+output: efficiency
+ylim: [0.84, 0.94]
+cut_threshold: 0.005
+
+dates:
+  start: "2024-01-01"
+  end: "2026-09-21"
+
+# quiet periods: threshold 0.005, at least 60 days, margin 14 days
+axis_cuts:
+  - { start: "2024-07-19", end: "2024-08-27" }
+  - { start: "2024-11-23", end: "2025-01-30" }
+  - { start: "2025-11-20", end: "2026-02-19" }
+  - { start: "2026-03-20", end: "2026-05-10" }
+
+# the legacy jobs do not print the validation tables, so only the ACTS flavors
+flavors:
+  acts_default:
+    label: "ACTS Default"
+    points: reco_efficiency
+
+  acts_fast:
+    label: "ACTS Fast"
+    points: reco_efficiency
+
+  acts_legacy:
+    label: "ACTS Legacy (full configuration)"
+    points: reco_efficiency

@@ -1,60 +1,195 @@
 dates:
   start: "2023-01-01"
-  end: "2025-04-18"
+  end: "2026-09-21"
 
 step: "Execute"
 
+# before this date, prefer the centos7 log if a date has both a centos7 and an
+# el9 log, because el9 is about 25% faster on the same code and most dates
+# before the switch only have a centos7 log
+el9_from: "2024-02-27"
+
+# masks for all flavors
+mask:
+  # after the switch to el9 on 2024-02-27, these dates only have a centos7 log,
+  # which is about 25% slower on the same code
+  - { start: "2024-03-08", end: "2024-03-10", reason: "centos7 log after the switch to el9" }
+  - { start: "2024-03-14", end: "2024-03-14", reason: "centos7 log after the switch to el9" }
+
+# PerfMonMTSvc prints only the 50 most expensive components, so a very cheap
+# component (for example the region creator) can be missing on some dates.
+#
+# `validation` points read the summary tables of the ACTS track finding
+# validation algorithm: `alg` is a regex on the algorithm name, `table` is
+# reco_efficiency, hit_efficiency, hit_purity or match_probability, and `eta`
+# and `pt` select a bin (default "All eta" and "All pt"). The legacy jobs do not
+# print these tables, and the tables have no fake rate.
+#
+# `map` is a regex on the component name. Anchor it with ^ and $, because the
+# parser fails if a regex matches more than one component (for example
+# ActsTrackFindingAlg and ActsLargeRadiusTrackFindingAlg).
+# `optional: true` marks a component that does not run on all dates. On those dates it gives no point, but sums count it as zero.
+# Without it, a missing component also gives no point to all sums over it.
+#
+# `mask` is a list of date ranges { start, end, reason } (both dates inclusive
+# and optional). The top-level mask removes the date from all flavors. A mask
+# on a flavor removes the date from all points of the flavor. A mask on a point
+# removes the point on that date, as if the component did not run.
+#
+# A flavor reads one SPOT job (`tag`), or it follows one configuration across
+# jobs with `sources`: a list of { tag, start, end } that must not overlap.
+
 flavors:
+  # legacy ITk chain; discontinued, the last log is from 2026-08-27 (then the job runs the ACTS chain)
   legacy_default:
     tag: "tracking"
     points:
-      - { name: "pixel_clusterization", map: "ITkPixelClusterization" }
-      - { name: "strip_clusterization", map: "ITkStripClusterization" }
+      - { name: "pixel_clusterization", map: "^ITkPixelClusterization$" }
+      - { name: "strip_clusterization", map: "^ITkStripClusterization$" }
       - { name: "clusterization", sum: ["pixel_clusterization", "strip_clusterization"] }
-      - { name: "space_point_formation", map: "ITkSiTrackerSpacePointFinder" }
-      - { name: "track_finding", map: "ITkSiSpTrackFinder" }
-      - { name: "ambiguity_solver", map: "ITkAmbiguitySolver" }
-      - { name: "ambiguity_score", map: "ITkAmbiguityScore" }
+      - { name: "space_point_formation", map: "^ITkSiTrackerSpacePointFinder$" }
+      - { name: "track_finding", map: "^ITkSiSpTrackFinder$" }
+      - { name: "ambiguity_solver", map: "^ITkAmbiguitySolver$" }
+      - { name: "ambiguity_score", map: "^ITkAmbiguityScore$" }
       - { name: "ambiguity", sum: ["ambiguity_solver", "ambiguity_score"]}
       - { name: "full_track_chain", sum: ["clusterization", "space_point_formation", "track_finding", "ambiguity"]}
 
+  # legacy ITk fast chain; discontinued, the last log is from 2026-08-27 (then the job runs the ACTS chain)
   legacy_fast:
     tag: "fasttracking"
     points:
-      - { name: "pixel_clusterization", map: "ITkPixelClusterization" }
-      - { name: "strip_clusterization", map: "ITkStripClusterization" }
+      - { name: "pixel_clusterization", map: "^ITkPixelClusterization$" }
+      - { name: "strip_clusterization", map: "^ITkStripClusterization$" }
       - { name: "clusterization", sum: ["pixel_clusterization", "strip_clusterization"] }
-      - { name: "space_point_formation", map: "ITkSiTrackerSpacePointFinder" }
-      - { name: "track_finding", map: "ITkSiSpTrackFinder" }
+      # renamed on 2023-07-10
+      - { name: "space_point_formation", map: "^ITk(?:Pixel)?SiTrackerSpacePointFinder$" }
+      - { name: "track_finding", map: "^ITkSiSpTrackFinder$" }
+      - { name: "full_track_chain", sum: ["clusterization", "space_point_formation", "track_finding"]}
 
+  # the actstracking job, which always runs the current default ACTS configuration
+  # name prefixes over time: ActsTrk (until 2024-02-04), ActsBenchmarkSpot (2024-04-22 to 2024-05-13)
+  # on 2025-05-09 the job changes to the fast configuration (pixel seeding only, see acts_fast)
+  # ambiguity resolution leaves on 2025-07-24
+  # LRT starts on 2026-03-05, and from then the strip space points serve LRT only
+  # the LRT algorithms have the prefix LargeD0 from 2026-05-28 to 2026-07-12
   acts_default:
     tag: "actstracking"
+    validation:
+      - { name: "reco_efficiency", alg: "^Acts(?:Resolved)?TracksTrackFindingValidationAlg$", table: "reco_efficiency" }
+      - { name: "hit_efficiency", alg: "^Acts(?:Resolved)?TracksTrackFindingValidationAlg$", table: "hit_efficiency" }
+      - { name: "hit_purity", alg: "^Acts(?:Resolved)?TracksTrackFindingValidationAlg$", table: "hit_purity" }
+      - { name: "match_probability", alg: "^Acts(?:Resolved)?TracksTrackFindingValidationAlg$", table: "match_probability" }
+      - { name: "lrt_reco_efficiency", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "reco_efficiency" }
+      - { name: "lrt_hit_efficiency", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "hit_efficiency" }
+      - { name: "lrt_hit_purity", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "hit_purity" }
     points:
-      - { name: "region_creator", map: ".*RegionsOfInterestCreatorAlg" }
-      - { name: "prd_map", map: ".*PrdAssociationAlg" }
-      - { name: "pixel_clusterization", map: ".*PixelClusterizationAlg" }
-      - { name: "strip_clusterization", map: ".*StripClusterizationAlg" }
+      - { name: "region_creator", map: "^Acts(?:BenchmarkSpot)?RegionsOfInterestCreatorAlg$", optional: true }
+      - { name: "prd_map", map: "^Acts(?:BenchmarkSpot)?PrdAssociationAlg$" }
+      - { name: "pixel_clusterization", map: "^Acts(?:Trk|BenchmarkSpot)?(?:ITk)?PixelClusterizationAlg$" }
+      - { name: "strip_clusterization", map: "^Acts(?:Trk|BenchmarkSpot)?(?:ITk)?StripClusterizationAlg$" }
       - { name: "clusterization", sum: ["pixel_clusterization", "strip_clusterization"] }
-      - { name: "pixel_space_point_formation", map: ".*PixelSpacePointFormation.*" }
-      - { name: "strip_space_point_formation", map: ".*StripSpacePointFormation.*" }
+      - { name: "pixel_space_point_formation", map: "^Acts(?:Trk|BenchmarkSpot)?PixelSpacePointFormation(?:Alg)?$" }
+      - { name: "strip_space_point_formation", map: "^Acts(?:Trk|BenchmarkSpot)?StripSpacePointFormation(?:Alg)?$", optional: true,
+          mask: [{ start: "2026-03-05", reason: "strip space points serve LRT only" }] }
       - { name: "space_point_formation", sum: ["pixel_space_point_formation", "strip_space_point_formation"] }
-      - { name: "pixel_seeding", map: ".*PixelSeedingAlg" }
-      - { name: "strip_seeding", map: ".*StripSeedingAlg" }
+      - { name: "pixel_seeding", map: "^Acts(?:Trk|BenchmarkSpot)?PixelSeedingAlg$" }
+      - { name: "strip_seeding", map: "^Acts(?:Trk|BenchmarkSpot)?StripSeedingAlg$", optional: true }
       - { name: "seeding", sum: ["pixel_seeding", "strip_seeding"] }
-      - { name: "ckf", map: ".*TrackFindingAlg" }
+      - { name: "ckf", map: "^Acts(?:BenchmarkSpot)?TrackFindingAlg$" }
       - { name: "track_finding", sum: ["seeding", "ckf"] }
-      - { name: "ambiguity", map: ".*AmbiguityResolutionAlg"}
+      - { name: "ambiguity", map: "^Acts(?:BenchmarkSpot)?AmbiguityResolution(?:Alg)?$", optional: true }
       - { name: "full_track_chain", sum: ["region_creator", "clusterization", "space_point_formation", "seeding", "ckf", "ambiguity"]}
+      - { name: "lrt_prd_map", map: "^(?:ActsLargeRadius|LargeD0)PrdAssociationAlg$" }
+      - { name: "lrt_pixel_cluster_preparation", map: "^(?:ActsLargeRadius|LargeD0)PixelClusterPreparationAlg$" }
+      - { name: "lrt_strip_cluster_preparation", map: "^(?:ActsLargeRadius|LargeD0)StripClusterPreparationAlg$" }
+      - { name: "lrt_strip_space_point_preparation", map: "^(?:ActsLargeRadius|LargeD0)StripSpacePointPreparationAlg$" }
+      - { name: "lrt_strip_overlap_space_point_preparation", map: "^(?:ActsLargeRadius|LargeD0)StripOverlapSpacePointPreparationAlg$" }
+      - { name: "lrt_strip_space_point_formation", map: "^ActsStripSpacePointFormationAlg$",
+          mask: [{ end: "2026-03-04", reason: "strip space points serve the main pass" }] }
+      - { name: "lrt_seeding", map: "^(?:ActsLargeRadius|LargeD0)StripSeedingAlg$" }
+      - { name: "lrt_ckf", map: "^(?:ActsLargeRadius|LargeD0)TrackFindingAlg$" }
+      - { name: "lrt", sum: ["lrt_prd_map", "lrt_pixel_cluster_preparation", "lrt_strip_cluster_preparation", "lrt_strip_space_point_preparation", "lrt_strip_overlap_space_point_preparation", "lrt_strip_space_point_formation", "lrt_seeding", "lrt_ckf"] }
+      - { name: "full_track_chain_lrt", sum: ["full_track_chain", "lrt"] }
 
+  # the fast ACTS configuration (pixel seeding only)
+  # actsfasttracking until 2025-05-08 (with the ActsFast prefix from 2025-02-15), then actstracking
   acts_fast:
-    tag: "actsfasttracking"
+    sources:
+      - { tag: "actsfasttracking", end: "2025-05-08" }
+      - { tag: "actstracking", start: "2025-05-09" }
+    validation:
+      - { name: "reco_efficiency", alg: "^Acts(?:Fast)?(?:Resolved)?TracksTrackFindingValidationAlg$", table: "reco_efficiency" }
+      - { name: "hit_efficiency", alg: "^Acts(?:Fast)?(?:Resolved)?TracksTrackFindingValidationAlg$", table: "hit_efficiency" }
+      - { name: "hit_purity", alg: "^Acts(?:Fast)?(?:Resolved)?TracksTrackFindingValidationAlg$", table: "hit_purity" }
+      - { name: "match_probability", alg: "^Acts(?:Fast)?(?:Resolved)?TracksTrackFindingValidationAlg$", table: "match_probability" }
+      - { name: "lrt_reco_efficiency", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "reco_efficiency" }
+      - { name: "lrt_hit_efficiency", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "hit_efficiency" }
+      - { name: "lrt_hit_purity", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "hit_purity" }
     points:
-      - { name: "pixel_clusterization", map: ".*PixelClusterizationAlg" }
-      - { name: "strip_clusterization", map: ".*StripClusterizationAlg" }
+      - { name: "region_creator", map: "^Acts(?:Fast)?RegionsOfInterestCreatorAlg$", optional: true }
+      - { name: "prd_map", map: "^Acts(?:Fast)?PrdAssociationAlg$" }
+      - { name: "pixel_clusterization", map: "^Acts(?:Fast)?PixelClusterizationAlg$" }
+      - { name: "strip_clusterization", map: "^Acts(?:Fast)?StripClusterizationAlg$" }
       - { name: "clusterization", sum: ["pixel_clusterization", "strip_clusterization"] }
-      - { name: "pixel_space_point_formation", map: ".*PixelSpacePointFormation.*" }
+      - { name: "pixel_space_point_formation", map: "^Acts(?:Fast)?PixelSpacePointFormationAlg$" }
       - { name: "space_point_formation", sum: ["pixel_space_point_formation"] }
-      - { name: "pixel_seeding", map: ".*PixelSeedingAlg" }
+      - { name: "pixel_seeding", map: "^Acts(?:Fast)?PixelSeedingAlg$" }
       - { name: "seeding", sum: ["pixel_seeding"] }
-      - { name: "ckf", map: ".*TrackFindingAlg" }
+      - { name: "ckf", map: "^Acts(?:Fast)?TrackFindingAlg$" }
       - { name: "track_finding", sum: ["seeding", "ckf"] }
+      - { name: "ambiguity", map: "^Acts(?:Fast)?AmbiguityResolutionAlg$", optional: true }
+      - { name: "full_track_chain", sum: ["region_creator", "clusterization", "space_point_formation", "seeding", "ckf", "ambiguity"]}
+      - { name: "lrt_prd_map", map: "^(?:ActsLargeRadius|LargeD0)PrdAssociationAlg$" }
+      - { name: "lrt_pixel_cluster_preparation", map: "^(?:ActsLargeRadius|LargeD0)PixelClusterPreparationAlg$" }
+      - { name: "lrt_strip_cluster_preparation", map: "^(?:ActsLargeRadius|LargeD0)StripClusterPreparationAlg$" }
+      - { name: "lrt_strip_space_point_preparation", map: "^(?:ActsLargeRadius|LargeD0)StripSpacePointPreparationAlg$" }
+      - { name: "lrt_strip_overlap_space_point_preparation", map: "^(?:ActsLargeRadius|LargeD0)StripOverlapSpacePointPreparationAlg$" }
+      - { name: "lrt_strip_space_point_formation", map: "^ActsStripSpacePointFormationAlg$",
+          mask: [{ end: "2026-03-04", reason: "strip space points serve the main pass" }] }
+      - { name: "lrt_seeding", map: "^(?:ActsLargeRadius|LargeD0)StripSeedingAlg$" }
+      - { name: "lrt_ckf", map: "^(?:ActsLargeRadius|LargeD0)TrackFindingAlg$" }
+      - { name: "lrt", sum: ["lrt_prd_map", "lrt_pixel_cluster_preparation", "lrt_strip_cluster_preparation", "lrt_strip_space_point_preparation", "lrt_strip_overlap_space_point_preparation", "lrt_strip_space_point_formation", "lrt_seeding", "lrt_ckf"] }
+      - { name: "full_track_chain_lrt", sum: ["full_track_chain", "lrt"] }
+
+  # the full ACTS configuration (pixel and strip seeding, ambiguity resolution)
+  # actstracking until 2025-05-08, then actstrackinglegacy (with the ActsLegacy prefix)
+  # discontinued, the last log is from 2026-08-10
+  # LRT starts on 2026-03-05; its algorithms have the prefix LargeD0 from 2026-05-28 to 2026-07-12
+  acts_legacy:
+    sources:
+      - { tag: "actstracking", end: "2025-05-08" }
+      - { tag: "actstrackinglegacy", start: "2025-05-09" }
+    validation:
+      - { name: "reco_efficiency", alg: "^Acts(?:Legacy)?(?:Resolved)?TracksTrackFindingValidationAlg$", table: "reco_efficiency" }
+      - { name: "hit_efficiency", alg: "^Acts(?:Legacy)?(?:Resolved)?TracksTrackFindingValidationAlg$", table: "hit_efficiency" }
+      - { name: "hit_purity", alg: "^Acts(?:Legacy)?(?:Resolved)?TracksTrackFindingValidationAlg$", table: "hit_purity" }
+      - { name: "match_probability", alg: "^Acts(?:Legacy)?(?:Resolved)?TracksTrackFindingValidationAlg$", table: "match_probability" }
+      - { name: "lrt_reco_efficiency", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "reco_efficiency" }
+      - { name: "lrt_hit_efficiency", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "hit_efficiency" }
+      - { name: "lrt_hit_purity", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "hit_purity" }
+    points:
+      - { name: "region_creator", map: "^Acts(?:BenchmarkSpot|Legacy)?RegionsOfInterestCreatorAlg$", optional: true }
+      - { name: "prd_map", map: "^Acts(?:BenchmarkSpot|Legacy)?PrdAssociationAlg$" }
+      - { name: "pixel_clusterization", map: "^Acts(?:Trk|BenchmarkSpot|Legacy)?(?:ITk)?PixelClusterizationAlg$" }
+      - { name: "strip_clusterization", map: "^Acts(?:Trk|BenchmarkSpot|Legacy)?(?:ITk)?StripClusterizationAlg$" }
+      - { name: "clusterization", sum: ["pixel_clusterization", "strip_clusterization"] }
+      - { name: "pixel_space_point_formation", map: "^Acts(?:Trk|BenchmarkSpot|Legacy)?PixelSpacePointFormation(?:Alg)?$" }
+      - { name: "strip_space_point_formation", map: "^Acts(?:Trk|BenchmarkSpot|Legacy)?StripSpacePointFormation(?:Alg)?$" }
+      - { name: "space_point_formation", sum: ["pixel_space_point_formation", "strip_space_point_formation"] }
+      - { name: "pixel_seeding", map: "^Acts(?:Trk|BenchmarkSpot|Legacy)?PixelSeedingAlg$" }
+      - { name: "strip_seeding", map: "^Acts(?:Trk|BenchmarkSpot|Legacy)?StripSeedingAlg$" }
+      - { name: "seeding", sum: ["pixel_seeding", "strip_seeding"] }
+      - { name: "ckf", map: "^Acts(?:BenchmarkSpot|Legacy)?TrackFindingAlg$" }
+      - { name: "track_finding", sum: ["seeding", "ckf"] }
+      - { name: "ambiguity", map: "^Acts(?:BenchmarkSpot|Legacy)?AmbiguityResolution(?:Alg)?$" }
+      - { name: "full_track_chain", sum: ["region_creator", "clusterization", "space_point_formation", "seeding", "ckf", "ambiguity"]}
+      - { name: "lrt_prd_map", map: "^(?:ActsLargeRadius|LargeD0)PrdAssociationAlg$" }
+      - { name: "lrt_pixel_cluster_preparation", map: "^(?:ActsLargeRadius|LargeD0)PixelClusterPreparationAlg$" }
+      - { name: "lrt_strip_cluster_preparation", map: "^(?:ActsLargeRadius|LargeD0)StripClusterPreparationAlg$" }
+      - { name: "lrt_strip_space_point_preparation", map: "^(?:ActsLargeRadius|LargeD0)StripSpacePointPreparationAlg$" }
+      - { name: "lrt_strip_overlap_space_point_preparation", map: "^(?:ActsLargeRadius|LargeD0)StripOverlapSpacePointPreparationAlg$" }
+      - { name: "lrt_seeding", map: "^(?:ActsLargeRadius|LargeD0)StripSeedingAlg$" }
+      - { name: "lrt_ckf", map: "^(?:ActsLargeRadius|LargeD0)TrackFindingAlg$" }
+      - { name: "lrt_ambiguity", map: "^(?:ActsLargeRadius|LargeD0)AmbiguityResolutionAlg$" }
+      - { name: "lrt", sum: ["lrt_prd_map", "lrt_pixel_cluster_preparation", "lrt_strip_cluster_preparation", "lrt_strip_space_point_preparation", "lrt_strip_overlap_space_point_preparation", "lrt_seeding", "lrt_ckf", "lrt_ambiguity"] }
+      - { name: "full_track_chain_lrt", sum: ["full_track_chain", "lrt"] }
