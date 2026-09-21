@@ -58,5 +58,30 @@ python -m spotter.plotter --config config/plot-trackfinding.yaml --axis-cuts off
 python -m spotter.plotter --config config/plot-trackfinding.yaml --axis-cuts auto --suggest-axis-cuts --cut-threshold 0.05 --cut-min-days 60
 ```
 
+## After a data update
+
+Three tools help to check new data and to add annotations:
+
+```bash
+# list the steps in the points, grouped into events; show only the events
+# without an annotation and without a platform or machine change
+python -m spotter.checks steps --since 2026-09-01 --unannotated
+
+# list the dates inside the lifetime of a point without a value
+# (a gap is usually a renamed component; add the new name to the regex)
+python -m spotter.checks gaps
+
+# show the values around a date: points of a flavor, components of a SPOT
+# job, or a validation table
+python -m spotter.peek 2025-07-09 --flavor acts_fast --points ckf pixel_seeding reco_efficiency
+python -m spotter.peek 2026-05-28 --tag actstracking --components "TrackFindingAlg"
+python -m spotter.peek 2024-05-27 --tag actstracking --validation reco_efficiency
+
+# write one standalone HTML page with all plot configs (about 16 MB)
+python -m spotter.gallery --output gallery.html
+```
+
+The step date is the first nightly with the new value. Nightly D contains the merges into athena main up to about 21:00 Zurich time on day D.
+
 Example:
 ![CPU annotated](plots/cpu_annotated.png)

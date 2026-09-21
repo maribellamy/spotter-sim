@@ -1,4 +1,5 @@
 title: "Full track reconstruction chain"
+description: "Full chain from clusterization to ambiguity resolution. The machine changes explain the steps on 2025-11-06 (up) and 2026-07-21 (down)."
 log_y: true
 
 dates:

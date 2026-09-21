@@ -475,6 +475,7 @@ def plot_relative(
     """Plot the CPU time at the selected annotations relative to another flavor."""
     point = config["flavors"][flavor]["points"]
     selected_cpu_values = []
+    selected_dates = []
     annotations = [a for a in central if matches(a, flavor, point)]
     annotations += config["flavors"][flavor].get("annotations", [])
     for annotation in sorted(annotations, key=lambda a: a["date"]):
@@ -482,6 +483,7 @@ def plot_relative(
         if not annotation.get("select", False) or len(data[flavor].loc[d:d]) == 0:
             continue
         selected_cpu_values.append([data[flavor].loc[d:d].cpu.iloc[0], annotation["label"]])
+        selected_dates.append(d)
     if not selected_cpu_values:
         return
 
@@ -539,11 +541,16 @@ def plot_relative(
 
         hep.atlas.text("Internal", fontsize=16, pad=0)
 
+        compare_title = config.get(
+            "compare_title",
+            f"{config['flavors'][flavor]['label']} vs {config['flavors'][compare_to_flavor]['label']} "
+            "track seeding and finding CPU/Event",
+        )
         text = rf"""
 HL-LHC, $\sqrt{{s}}$ = 14 TeV, $t\bar{{t}}$, $\langle\mu\rangle$ = 200
-{config["flavors"][flavor]["label"]} vs {config["flavors"][compare_to_flavor]["label"]} track seeding and finding CPU/Event
-Start date: 15 February 2024, Athena 24.0.24 (Acts v32.0.2)
-End date: 30 July 2024, Athena 25.0.11 (Acts v36.0.0)
+{compare_title}
+Start date: {selected_dates[0]:%d %B %Y}
+End date: {selected_dates[-1]:%d %B %Y}
         """
         text = textwrap.dedent(text.strip())
 
