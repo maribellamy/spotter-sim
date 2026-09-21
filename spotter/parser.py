@@ -7,7 +7,8 @@ import pandas as pd
 def parse_spot(txt: str) -> pd.DataFrame:
     assert isinstance(txt, str)
     p = re.compile(
-        r"\d\d:\d\d:\d\d PerfMonMTSvc\s+INFO (\w+?)\s+(\d+)\s+(\d+(?:\.\d*)?)\s+(\d+(?:\.\d*)?)\s+(\d+(?:\.\d*)?)\s+(.+)"
+        # vmem and malloc can be negative, for example if an algorithm frees memory
+        r"\d\d:\d\d:\d\d PerfMonMTSvc\s+INFO (\w+?)\s+(\d+)\s+(\d+(?:\.\d*)?)\s+(-?\d+(?:\.\d*)?)\s+(-?\d+(?:\.\d*)?)\s+(.+)"
     )
     columns = ["step", "count", "cpu", "vmem", "malloc", "component"]
     data: list[tuple[str]] = []
@@ -22,6 +23,62 @@ def parse_spot(txt: str) -> pd.DataFrame:
     result[["count"]] = result[["count"]].astype(int)
     result[["cpu", "vmem", "malloc"]] = result[["cpu", "vmem", "malloc"]].astype(float)
     return result
+
+
+VALIDATION_TABLES = {
+    "Hit efficiency": "hit_efficiency",
+    "Hit purity": "hit_purity",
+    "Match probability": "match_probability",
+    "Reco efficiency": "reco_efficiency",
+}
+
+
+def parse_validation(txt: str) -> pd.DataFrame:
+    """Read the summary tables of the ACTS track finding validation algorithms.
+
+    Each algorithm (for example ActsTracksTrackFindingValidationAlg) prints
+    tables of the hit efficiency, the hit purity, the match probability and the
+    reco efficiency in bins of eta and pT, and a table of counts. The result
+    keeps the "All pt" column, the "All eta" row and the counts, with the
+    columns alg, table, eta, pt and value.
+    """
+    assert isinstance(txt, str)
+    time = re.compile(r"^\d\d:\d\d:\d\d ")
+    alg_line = re.compile(r"^(\w+ValidationAlg)\s+INFO")
+    rows = []
+    alg = table = None
+    header: list[str] = []
+    for line in txt.splitlines():
+        line = time.sub("", line)
+        m = alg_line.match(line)
+        if m:
+            alg, table = m.group(1), None
+            continue
+        if alg is None:
+            continue
+        title = line.split(" :")[0].strip()
+        if title in VALIDATION_TABLES:
+            table = VALIDATION_TABLES[title]
+            continue
+        if not line.startswith("|") or line.startswith("|-"):
+            if line.strip() and not line.startswith("|"):
+                # any other text ends the output of the algorithm
+                alg = table = None
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if cells[0].startswith("eta"):
+            header = cells[1:]
+        elif len(cells) == 2:
+            try:
+                rows.append((alg, "counts", cells[0], "", float(cells[1])))
+            except ValueError:
+                pass
+        elif table is not None and len(cells) == len(header) + 1:
+            eta = cells[0]
+            for pt, value in zip(header, cells[1:]):
+                if eta == "All eta" or pt == "All pt":
+                    rows.append((alg, table, eta, pt, float(value)))
+    return pd.DataFrame(rows, columns=["alg", "table", "eta", "pt", "value"])
 
 
 def zero_point(d: date) -> dict[str, date | float]:

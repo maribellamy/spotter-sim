@@ -1,0 +1,31 @@
+# The SPOT machines, from the "running on" line and the PerfMonMTSvc system
+# information in the logs.
+#
+# HS23 is HEPScore23, the HEPiX benchmark of a whole machine; higher is faster.
+# `per_core` is HS23 divided by the number of online CPUs (logical cores with
+# SMT on). The values are the CERN measurements for the same CPU model and core
+# configuration from https://w3.hepix.org/benchmarking/scores_HS23.html,
+# not measurements of the SPOT machines themselves.
+#
+# `start` and `end` (both optional and inclusive) select the period of a
+# configuration, because aiatlasbm001 ran with SMT off in 2023/24 and with SMT
+# on from 2025-11-06.
+
+machines:
+  - host: aiatlasbm001
+    end: "2024-12-31"
+    cpu: "AMD EPYC 7302"
+    cores: "2x16 cores, SMT off"
+    hs23: 768.2
+    per_core: 24.0
+  - host: aiatlasbm001
+    start: "2025-01-01"
+    cpu: "AMD EPYC 7302"
+    cores: "2x16 cores, SMT on"
+    hs23: 994.5
+    per_core: 15.5
+  - host: aiatlasbm006
+    cpu: "Intel Xeon Gold 6326 @ 2.90 GHz"
+    cores: "2x16 cores, SMT off"
+    hs23: 863.5
+    per_core: 27.0

@@ -35,5 +35,28 @@ python -m spotter.fetcher --refetch
 
 `config/fetcher.yaml` explains the `map`, `sum`, `optional`, `mask` and `sources` options.
 
+The plotter can cut quiet periods out of the x axis. A quiet period is a date range in which no plotted series changes by more than a relative threshold. The cuts never hide an annotation, a platform change or a move of a flavor between SPOT jobs.
+
+`config/annotations.yaml` holds the annotations for all plots. Each annotation lists the flavors and the points that it affects, so a change appears on every plot that shows one of them. The plots also mark these changes from the data:
+
+- a change of the platform (for example `el9-gcc15`), with a solid gray line
+- a change of the SPOT machine, with a dash-dot gray line
+- a move of a flavor from one SPOT job to another, with a dotted line in the color of the flavor
+
+`config/machines.yaml` holds the CPU model and the HS23 (HEPScore23) benchmark of each SPOT machine. The plots name the machine, its CPU and its HS23 below the x axis and at each machine change.
+
+A plot config can set `log_y: true` for data that changes by more than a factor of about 10.
+
+```bash
+# use the axis cuts of the config (the default)
+python -m spotter.plotter --config config/plot-trackfinding.yaml
+
+# plot without axis cuts
+python -m spotter.plotter --config config/plot-trackfinding.yaml --axis-cuts off
+
+# compute the cuts from the data, and print them for the `axis_cuts` key of the config
+python -m spotter.plotter --config config/plot-trackfinding.yaml --axis-cuts auto --suggest-axis-cuts --cut-threshold 0.05 --cut-min-days 60
+```
+
 Example:
 ![CPU annotated](plots/cpu_annotated.png)

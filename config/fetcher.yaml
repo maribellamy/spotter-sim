@@ -4,6 +4,27 @@ dates:
 
 step: "Execute"
 
+# before this date, prefer the centos7 log if a date has both a centos7 and an
+# el9 log, because el9 is about 25% faster on the same code and most dates
+# before the switch only have a centos7 log
+el9_from: "2024-02-27"
+
+# masks for all flavors
+mask:
+  # after the switch to el9 on 2024-02-27, these dates only have a centos7 log,
+  # which is about 25% slower on the same code
+  - { start: "2024-03-08", end: "2024-03-10", reason: "centos7 log after the switch to el9" }
+  - { start: "2024-03-14", end: "2024-03-14", reason: "centos7 log after the switch to el9" }
+
+# PerfMonMTSvc prints only the 50 most expensive components, so a very cheap
+# component (for example the region creator) can be missing on some dates.
+#
+# `validation` points read the summary tables of the ACTS track finding
+# validation algorithm: `alg` is a regex on the algorithm name, `table` is
+# reco_efficiency, hit_efficiency, hit_purity or match_probability, and `eta`
+# and `pt` select a bin (default "All eta" and "All pt"). The legacy jobs do not
+# print these tables, and the tables have no fake rate.
+#
 # `map` is a regex on the component name. Anchor it with ^ and $, because the
 # parser fails if a regex matches more than one component (for example
 # ActsTrackFindingAlg and ActsLargeRadiusTrackFindingAlg).
@@ -11,8 +32,9 @@ step: "Execute"
 # Without it, a missing component also gives no point to all sums over it.
 #
 # `mask` is a list of date ranges { start, end, reason } (both dates inclusive
-# and optional). A mask on a flavor removes the date from all points. A mask on
-# a point removes the point on that date, as if the component did not run.
+# and optional). The top-level mask removes the date from all flavors. A mask
+# on a flavor removes the date from all points of the flavor. A mask on a point
+# removes the point on that date, as if the component did not run.
 #
 # A flavor reads one SPOT job (`tag`), or it follows one configuration across
 # jobs with `sources`: a list of { tag, start, end } that must not overlap.
@@ -52,6 +74,14 @@ flavors:
   # the LRT algorithms have the prefix LargeD0 from 2026-05-28 to 2026-07-12
   acts_default:
     tag: "actstracking"
+    validation:
+      - { name: "reco_efficiency", alg: "^Acts(?:Resolved)?TracksTrackFindingValidationAlg$", table: "reco_efficiency" }
+      - { name: "hit_efficiency", alg: "^Acts(?:Resolved)?TracksTrackFindingValidationAlg$", table: "hit_efficiency" }
+      - { name: "hit_purity", alg: "^Acts(?:Resolved)?TracksTrackFindingValidationAlg$", table: "hit_purity" }
+      - { name: "match_probability", alg: "^Acts(?:Resolved)?TracksTrackFindingValidationAlg$", table: "match_probability" }
+      - { name: "lrt_reco_efficiency", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "reco_efficiency" }
+      - { name: "lrt_hit_efficiency", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "hit_efficiency" }
+      - { name: "lrt_hit_purity", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "hit_purity" }
     points:
       - { name: "region_creator", map: "^Acts(?:BenchmarkSpot)?RegionsOfInterestCreatorAlg$", optional: true }
       - { name: "prd_map", map: "^Acts(?:BenchmarkSpot)?PrdAssociationAlg$" }
@@ -87,6 +117,14 @@ flavors:
     sources:
       - { tag: "actsfasttracking", end: "2025-05-08" }
       - { tag: "actstracking", start: "2025-05-09" }
+    validation:
+      - { name: "reco_efficiency", alg: "^Acts(?:Fast)?(?:Resolved)?TracksTrackFindingValidationAlg$", table: "reco_efficiency" }
+      - { name: "hit_efficiency", alg: "^Acts(?:Fast)?(?:Resolved)?TracksTrackFindingValidationAlg$", table: "hit_efficiency" }
+      - { name: "hit_purity", alg: "^Acts(?:Fast)?(?:Resolved)?TracksTrackFindingValidationAlg$", table: "hit_purity" }
+      - { name: "match_probability", alg: "^Acts(?:Fast)?(?:Resolved)?TracksTrackFindingValidationAlg$", table: "match_probability" }
+      - { name: "lrt_reco_efficiency", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "reco_efficiency" }
+      - { name: "lrt_hit_efficiency", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "hit_efficiency" }
+      - { name: "lrt_hit_purity", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "hit_purity" }
     points:
       - { name: "region_creator", map: "^Acts(?:Fast)?RegionsOfInterestCreatorAlg$", optional: true }
       - { name: "prd_map", map: "^Acts(?:Fast)?PrdAssociationAlg$" }
@@ -121,6 +159,14 @@ flavors:
     sources:
       - { tag: "actstracking", end: "2025-05-08" }
       - { tag: "actstrackinglegacy", start: "2025-05-09" }
+    validation:
+      - { name: "reco_efficiency", alg: "^Acts(?:Legacy)?(?:Resolved)?TracksTrackFindingValidationAlg$", table: "reco_efficiency" }
+      - { name: "hit_efficiency", alg: "^Acts(?:Legacy)?(?:Resolved)?TracksTrackFindingValidationAlg$", table: "hit_efficiency" }
+      - { name: "hit_purity", alg: "^Acts(?:Legacy)?(?:Resolved)?TracksTrackFindingValidationAlg$", table: "hit_purity" }
+      - { name: "match_probability", alg: "^Acts(?:Legacy)?(?:Resolved)?TracksTrackFindingValidationAlg$", table: "match_probability" }
+      - { name: "lrt_reco_efficiency", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "reco_efficiency" }
+      - { name: "lrt_hit_efficiency", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "hit_efficiency" }
+      - { name: "lrt_hit_purity", alg: "^(?:ActsLargeRadius|LargeD0)TracksTrackFindingValidationAlg$", table: "hit_purity" }
     points:
       - { name: "region_creator", map: "^Acts(?:BenchmarkSpot|Legacy)?RegionsOfInterestCreatorAlg$", optional: true }
       - { name: "prd_map", map: "^Acts(?:BenchmarkSpot|Legacy)?PrdAssociationAlg$" }
