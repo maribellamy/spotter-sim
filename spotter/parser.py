@@ -83,7 +83,14 @@ def extract_points_per_algorithm(
         r = data[data["component"].str.contains(name)]
         if len(r) == 0:
             return null_point(d)
+        if len(r) > 1:
+            raise ValueError(
+                f"{d}: '{name}' matches more than one component: {list(r['component'])}"
+            )
         return convert_point(d, r)
+
+    # an optional component does not run on all dates, so a sum counts it as zero there
+    optional = {p["name"] for p in points_mapping if p.get("optional", False)}
 
     points_per_algorithm = {}
     for point_mapping in points_mapping:
@@ -98,6 +105,8 @@ def extract_points_per_algorithm(
                     point = points_per_algorithm[n]
                 else:
                     point = extract_one(d, data, n)
+                if n in optional and pd.isna(point["cpu"]):
+                    point = zero_point(d)
                 points.append(point)
             point = sum_points(*points)
         else:

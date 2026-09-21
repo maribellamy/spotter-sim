@@ -1,8 +1,10 @@
-from datetime import date
+import re
+from datetime import date, datetime
 from concurrent.futures import ThreadPoolExecutor
 import itertools
 import urllib.request
-from urllib.error import HTTPError
+from http.client import IncompleteRead
+from urllib.error import HTTPError, URLError
 import argparse
 from pathlib import Path
 import yaml
@@ -12,20 +14,41 @@ from spotter.utilities import date_range
 from spotter.spot_data_config import SpotConfig, SpotData
 
 
-def get_url(*, d: date, flavor: str) -> str:
-    assert isinstance(d, date)
-    assert isinstance(flavor, str)
-    date_str = d.strftime("%d-%m-%Y")
-    base = f"https://atlaspmb.web.cern.ch/atlaspmb/spot-mon-phase2_recoonly_{flavor}/pages/logs"
-    binary = "main-x86_64-el9-gcc13-opt"
-    job = f"phase2_recoonly_{flavor}-RAWtoALL"
-    if d < date.fromisoformat("2024-03-01"):
-        base += "/archive_centos7"
-        binary = "main-x86_64-centos7-gcc11-opt"
-    return f"{base}/{date_str}-{binary}-{job}"
+BASE_URL = "https://atlaspmb.web.cern.ch/atlaspmb"
+LOG_DIRS = ["logs", "logs/archive_centos7"]
 
 
-def do_fetch(data: SpotData, retries: int) -> None:
+def get_log_index(*, tag: str) -> dict[date, str]:
+    """Map each date to the URL of the `main` RAWtoALL log for a SPOT tag.
+
+    The platform and the compiler in the log name change over time
+    (centos7-gcc11, el9-gcc13, el9-gcc14, el9-gcc15). If a date has more than
+    one log, the log with el9 and the newest compiler wins.
+    """
+    assert isinstance(tag, str)
+    pattern = re.compile(
+        rf"^(\d\d-\d\d-\d\d\d\d)-main-x86_64-(\w+)-gcc(\d+)-opt-phase2_recoonly_{tag}-RAWtoALL$"
+    )
+    candidates: dict[date, tuple[tuple[bool, int], str]] = {}
+    for log_dir in LOG_DIRS:
+        url = f"{BASE_URL}/spot-mon-phase2_recoonly_{tag}/pages/{log_dir}/"
+        try:
+            html = urllib.request.urlopen(url, timeout=60).read().decode("utf-8")
+        except HTTPError as e:
+            print(url, e)
+            continue
+        for name in re.findall(r'href="([^"?/]+)"', html):
+            m = pattern.match(name)
+            if not m:
+                continue
+            d = datetime.strptime(m.group(1), "%d-%m-%Y").date()
+            rank = (m.group(2) == "el9", int(m.group(3)))
+            if d not in candidates or rank > candidates[d][0]:
+                candidates[d] = (rank, f"{url}{name}")
+    return {d: u for d, (_, u) in candidates.items()}
+
+
+def do_fetch(data: SpotData, retries: int, indices: dict[str, dict[date, str]]) -> None:
     assert isinstance(data, SpotData)
     assert isinstance(retries, int)
 
@@ -34,22 +57,27 @@ def do_fetch(data: SpotData, retries: int) -> None:
         assert isinstance(retries, int)
         for _ in range(retries):
             try:
-                return urllib.request.urlopen(u).read().decode("utf-8")
-            except HTTPError as e:
+                return urllib.request.urlopen(u, timeout=120).read().decode("utf-8")
+            except (URLError, TimeoutError, IncompleteRead) as e:
                 print(d, u, e)
         return None
 
     d: date = data.date
     for flavor, config in data.spot_configs.items():
-        url = get_url(d=d, flavor=config.tag)
-        data.add_data(flavor=flavor, data=load(url, retries=retries))
+        url = indices[config.tag].get(d)
+        data.add_data(flavor=flavor, data=None if url is None else load(url, retries))
 
 
 def do_fetch_all(*, data: list[SpotData], retries: int) -> None:
     assert isinstance(data, list)
     assert isinstance(retries, int)
+    tags = {c.tag for sd in data for c in sd.spot_configs.values()}
+    indices = {tag: get_log_index(tag=tag) for tag in tags}
+    for tag, index in indices.items():
+        print(f"{tag}: {len(index)} logs available")
     with ThreadPoolExecutor() as tp:
-        tp.map(do_fetch, data, itertools.repeat(retries))
+        # consume the results so that exceptions in the workers are raised
+        list(tp.map(do_fetch, data, itertools.repeat(retries), itertools.repeat(indices)))
 
 
 def main():
