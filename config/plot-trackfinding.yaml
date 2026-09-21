@@ -1,5 +1,8 @@
 title: "Track finding (seeding and CKF)"
+description: "Seeding plus CKF. From 2025-05-09 the ACTS default job runs the fast configuration, so its line lies on the ACTS fast line."
 log_y: true
+# the second line of the text in the relative comparison plot
+compare_title: "Acts-based vs current track seeding and finding CPU/Event"
 
 dates:
   start: "2024-02-01"
