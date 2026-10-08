@@ -37,15 +37,11 @@ python -m spotter.fetcher --refetch
 
 The plotter can cut quiet periods out of the x axis. A quiet period is a date range in which no plotted series changes by more than a relative threshold. The cuts never hide an annotation, a platform change or a move of a flavor between SPOT jobs.
 
-`config/annotations.yaml` holds the annotations for all plots. Each annotation lists the flavors and the points that it affects, so a change appears on every plot that shows one of them. The plots also mark these changes from the data:
-
-- a change of the platform (for example `el9-gcc15`), with a solid gray line
-- a change of the SPOT machine, with a dash-dot gray line
-- a move of a flavor from one SPOT job to another, with a dotted line in the color of the flavor
+`config/annotations.yaml` holds the annotations for all plots. Each annotation lists the flavors and the points that it affects, so a change appears on every plot that shows one of them. An annotation of a part also belongs to every sum that contains it (the `sum` points of `config/fetcher.yaml`): an annotation of `ckf` shows on the track finding plot and on the full chain plot too. The plots also mark a move of a flavor from one SPOT job to another, with a dotted line in the color of the flavor.
 
 `config/machines.yaml` holds the CPU model and the HS23 (HEPScore23) benchmark of each SPOT machine. The plots name the machine, its CPU and its HS23 below the x axis and at each machine change.
 
-One machine is the reference (`reference: true`). The other machine periods have `scale` factors: the CPU time on that machine divided by the CPU time on the reference machine for the same code, per point, and per flavor and point where the flavors differ. The plotter and the checks divide the CPU times by these factors, so that a series continues across a machine change, and the y axis names the reference machine. `--raw` uses the measured times.
+One machine is the reference (`reference: true`). The other machine periods have `scale` factors: the CPU time on that machine divided by the CPU time on the reference machine for the same code, per point, and per flavor and point where the flavors differ. The plotter and the checks divide the CPU times by these factors, so that a series continues across a machine change. The plots show the CPU time in HS23·s: the normalized time in s times the HS23 per core of the reference machine, as in the public plots. The job runs one thread, so the unit is only an estimate of the throughput. `--unit s` gives the normalized seconds, and `--raw` the measured seconds.
 
 HS23 does not give these factors. It measures the throughput of the whole machine, so the per-core value with SMT on is wrong by about 45% for a single thread, and the ratio between two machines differs between the algorithms by tens of percent (for example 1.15 for the clusterization and 1.29 for the CKF between aiatlasbm001 with SMT on and aiatlasbm006).
 

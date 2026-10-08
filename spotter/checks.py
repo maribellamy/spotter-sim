@@ -21,7 +21,7 @@ import pandas as pd
 import yaml
 
 from spotter.machines import find_machine, load_machines, normalize_cpu, reference_machine
-from spotter.plotter import matches
+from spotter.points import matches, transitive_parts
 
 
 def point_names(fetcher_config: dict) -> dict[str, list[str]]:
@@ -82,6 +82,7 @@ def measure_machine_scale(
     annotations: list[dict],
     flavor: str,
     points: list[str],
+    parts: dict,
     window: int,
     min_points: int,
 ) -> tuple[list[dict], list[str]]:
@@ -92,7 +93,8 @@ def measure_machine_scale(
     the median of the first `window` nightlies on the new machine. An
     annotation of the series cuts the window, because the code changes there.
     `points` is the point and the sum points that contain it, because an
-    annotation of a sum (for example `track_finding`) also changes its parts.
+    annotation of a sum (for example `track_finding`) also changes its parts;
+    `parts` (from `transitive_parts`) makes an annotation of a part count too.
     A move with an annotation on the same day, or with fewer than `min_points`
     nightlies on one side, is skipped. The function returns the measurements
     and the reasons of the skipped moves.
@@ -114,7 +116,7 @@ def measure_machine_scale(
     dates = sorted({
         pd.Timestamp(a["date"])
         for a in annotations
-        if any(matches(a, flavor, p) for p in points)
+        if any(matches(a, flavor, p, parts) for p in points)
     })
     rows, skipped = [], []
     for i in changes:
@@ -164,6 +166,7 @@ def measure_machine_scale(
 def machine_scale_command(args, fetcher_config: dict, annotations: list[dict], machines: list[dict]):
     if reference_machine(machines) is None:
         raise SystemExit(f"{args.machines}: no machine has `reference: true`")
+    parts = transitive_parts(fetcher_config)
     rows, skipped = [], []
     for flavor, points in point_names(fetcher_config).items():
         if args.flavors and flavor not in args.flavors:
@@ -176,7 +179,7 @@ def machine_scale_command(args, fetcher_config: dict, annotations: list[dict], m
                 continue
             r, s = measure_machine_scale(
                 df, machines=machines, annotations=annotations, flavor=flavor,
-                points=[point] + containing_sums(fetcher_config, flavor, point),
+                points=[point] + containing_sums(fetcher_config, flavor, point), parts=parts,
                 window=args.window, min_points=args.min_points,
             )
             rows += r
@@ -268,6 +271,7 @@ def find_steps(
 
 
 def steps_command(args, fetcher_config: dict, annotations: list[dict], machines: list[dict]):
+    parts = transitive_parts(fetcher_config)
     rows = []
     for flavor, points in point_names(fetcher_config).items():
         if args.flavors and flavor not in args.flavors:
@@ -287,7 +291,7 @@ def steps_command(args, fetcher_config: dict, annotations: list[dict], machines:
                 known = [
                     a["text"]
                     for a in annotations
-                    if abs((pd.Timestamp(a["date"]) - d).days) <= 1 and matches(a, flavor, point)
+                    if abs((pd.Timestamp(a["date"]) - d).days) <= 1 and matches(a, flavor, point, parts)
                 ]
                 rows.append({"flavor": flavor, "point": point, **step, "annotation": "; ".join(known)})
     if not rows:
@@ -388,8 +392,8 @@ def main():
     scale.add_argument("--window", type=int, default=7, help="number of nightlies before and after a move (default 7)")
     scale.add_argument("--min-points", type=int, default=3, help="minimum number of nightlies on each side of a move (default 3)")
     scale.add_argument(
-        "--split-threshold", type=float, default=0.03,
-        help="a flavor gets its own factor if it deviates from the factor of the point by more than this (default 0.03)",
+        "--split-threshold", type=float, default=0.02,
+        help="a flavor gets its own factor if it deviates from the factor of the point by more than this (default 0.02)",
     )
     args = parser.parse_args()
 

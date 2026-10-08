@@ -19,7 +19,7 @@
 # around the moves between the machines (python -m spotter.checks machine-scale
 # prints the blocks below). `default` applies to the points without their own
 # factor, `point` to that point of every flavor, and `flavor.point` to that
-# point of one flavor. The plotter and the checks divide the CPU times by
+# point of one flavor (the tool adds one if the flavor deviates by more than 2%). The plotter and the checks divide the CPU times by
 # these factors.
 
 machines:
@@ -61,6 +61,7 @@ machines:
       legacy_default.pixel_clusterization: 1.528
       legacy_default.space_point_formation: 1.475
       legacy_default.strip_clusterization: 1.320
+      legacy_default.track_finding: 1.270
       legacy_fast.clusterization: 1.445
       legacy_fast.full_track_chain: 1.379
       legacy_fast.pixel_clusterization: 1.504
@@ -98,9 +99,14 @@ machines:
       acts_fast.space_point_formation: 1.191
       acts_legacy.full_track_chain: 1.251
       acts_legacy.region_creator: 1.757
+      acts_legacy.seeding: 1.236
       acts_legacy.track_finding: 1.263
+      legacy_default.strip_clusterization: 1.214
+      legacy_fast.full_track_chain: 1.181
       legacy_fast.space_point_formation: 1.366
+      legacy_fast.strip_clusterization: 1.215
       legacy_fast.track_finding: 1.175
+
   - host: aiatlasbm006
     reference: true
     cpu: "Intel Xeon Gold 6326 @ 2.90 GHz"
