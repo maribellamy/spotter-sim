@@ -37,7 +37,7 @@ python -m spotter.fetcher --refetch
 
 The plotter can cut quiet periods out of the x axis. A quiet period is a date range in which no plotted series changes by more than a relative threshold. The cuts never hide an annotation, a platform change or a move of a flavor between SPOT jobs.
 
-`config/annotations.yaml` holds the annotations for all plots. Each annotation lists the flavors and the points that it affects, so a change appears on every plot that shows one of them. An annotation of a part also belongs to every sum that contains it (the `sum` points of `config/fetcher.yaml`): an annotation of `ckf` shows on the track finding plot and on the full chain plot too. The plots also mark a move of a flavor from one SPOT job to another, with a dotted line in the color of the flavor.
+`config/annotations.yaml` holds the annotations for all plots. Each annotation lists the flavors and the points that it affects, so a change appears on every plot that shows one of them. An annotation of a part also belongs to every sum that contains it (the `sum` points of `config/fetcher.yaml`): an annotation of `ckf` shows on the track finding plot and on the full chain plot too. An annotation gets a marker with the same number on every line that it affects.
 
 `config/machines.yaml` holds the CPU model and the HS23 (HEPScore23) benchmark of each SPOT machine. The plots name the machine, its CPU and its HS23 below the x axis and at each machine change.
 

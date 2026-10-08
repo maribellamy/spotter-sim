@@ -93,15 +93,6 @@ def smooth(df: pd.DataFrame, metric: str, window: int) -> pd.Series:
     return df[metric].rolling(window, center=True, min_periods=1).median()
 
 
-def tag_changes(df: pd.DataFrame) -> list[tuple[pd.Timestamp, str, str]]:
-    """Return the dates where a flavor moves from one SPOT job to another."""
-    if "tag" not in df:
-        return []
-    tag = df["tag"]
-    changed = tag.ne(tag.shift()) & tag.shift().notna()
-    return [(d, tag.shift()[d], t) for d, t in tag[changed].items()]
-
-
 def compute_axis_cuts(
     args, config: dict, data: dict[str, pd.DataFrame], keep: list[pd.Timestamp]
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
@@ -211,8 +202,8 @@ def plot_timeseries(
 
     Each flavor shows its daily values as small markers and a rolling median
     (or the configured piecewise constant fit) as a line. The plot marks the
-    changes of the platform and the moves of a flavor between SPOT jobs, and
-    numbers the annotations in a list below the plot.
+    numbers the annotations in a list below the plot, with a marker on every
+    line that an annotation affects.
     """
     flavors = config["flavors"]
     # the dates of the config, so that plots with the same dates have the same x range
@@ -245,7 +236,6 @@ def plot_timeseries(
         ]
     )
 
-    moves: list[tuple[float, str, str]] = []
     for flavor, df in data.items():
         if len(df) == 0:
             continue
@@ -265,28 +255,6 @@ def plot_timeseries(
             lx, ly = axis.split_lines(df.index, smooth(df, metric, args.smooth_window))
         ax.plot(lx, ly, "-", lw=2, color=color, zorder=3, solid_capstyle="round")
 
-        for d, old, new in tag_changes(df):
-            if axis.is_cut([d])[0]:
-                continue
-            moves.append((axis.forward([d])[0], color, f" {old} → {new}"))
-
-    # two moves on about the same date get their labels on both sides:
-    # the label of the left line goes to the left, and the other label to the right
-    moves.sort(key=lambda m: m[0])
-    for i, (xd, color, label) in enumerate(moves):
-        side = "left" if i > 0 and xd - moves[i - 1][0] < 15 else "right"
-        ax.axvline(xd, color=color, lw=1.2, ls=(0, (2, 2)), alpha=0.8, zorder=1)
-        ax.text(
-            xd,
-            0.02,
-            label,
-            transform=blended_transform_factory(ax.transData, ax.transAxes),
-            rotation=90,
-            ha=side,
-            va="bottom",
-            fontsize=9,
-            color=TEXT_SECONDARY,
-        )
 
     # y axis from zero, because the reader compares magnitudes; a logarithmic
     # axis for data over more than a factor of about 10
@@ -365,15 +333,16 @@ def plot_timeseries(
         # a value outside the y axis gets its badge at the edge
         ylo, yhi = ax.get_ylim()
         pad = (yhi - ylo) * 0.03
-        for a in annotations:
-            if not args.log_y and not config.get("log_y", False):
-                a["y"] = min(max(a["y"], ylo + pad), yhi - pad)
+        linear = not args.log_y and not config.get("log_y", False)
         for n, a in enumerate(annotations, start=1):
-            ax.plot(a["x"], a["y"], "o", ms=14, color=TEXT_PRIMARY, mec="white", mew=1.5, zorder=6)
-            ax.text(
-                a["x"], a["y"], str(n), ha="center", va="center", fontsize=7.5,
-                color="white", fontweight="bold", zorder=7,
-            )
+            for x, y in a["positions"]:
+                if linear:
+                    y = min(max(y, ylo + pad), yhi - pad)
+                ax.plot(x, y, "o", ms=14, color=TEXT_PRIMARY, mec="white", mew=1.5, zorder=6)
+                ax.text(
+                    x, y, str(n), ha="center", va="center", fontsize=7.5,
+                    color="white", fontweight="bold", zorder=7,
+                )
         for n, a in enumerate(annotations, start=1):
             column, r = divmod(n - 1, rows)
             text = a["text"].replace("\n", " ")
@@ -420,10 +389,10 @@ def collect_annotations(
     metric: str,
     window: int,
 ) -> list[dict]:
-    """Return the annotations that are visible, with their position on the line.
+    """Return the annotations that are visible, with their positions on the lines.
 
-    An annotation that matches more than one line gets one marker, on the first
-    matching line in the order of the config.
+    An annotation that matches more than one line gets one marker with the
+    same number on each of these lines.
     """
     result = {}
     for flavor, flavor_config in config["flavors"].items():
@@ -435,18 +404,12 @@ def collect_annotations(
         candidates += flavor_config.get("annotations", [])
         for a in candidates:
             d = pd.Timestamp(a["date"])
-            key = (d, a["text"])
-            if key in result:
-                continue
             if d < df.index.min() or d > df.index.max() or axis.is_cut([d])[0]:
                 continue
             nearest = line.index[line.index.get_indexer([d], method="nearest")[0]]
-            result[key] = {
-                "date": d,
-                "text": a["text"],
-                "x": axis.forward([nearest])[0],
-                "y": line[nearest],
-            }
+            key = (d, a["text"])
+            result.setdefault(key, {"date": d, "text": a["text"], "positions": []})
+            result[key]["positions"].append((axis.forward([nearest])[0], line[nearest]))
     return sorted(result.values(), key=lambda a: a["date"])
 
 
@@ -695,7 +658,7 @@ def main():
         central = loaded["annotations"]
         references = loaded.get("references", [])
 
-    # the axis cuts do not hide annotations or moves between SPOT jobs
+    # the axis cuts do not hide annotations
     keep = [
         pd.Timestamp(a["date"])
         for flavor, f in config["flavors"].items()
@@ -703,7 +666,6 @@ def main():
         + f.get("annotations", [])
     ]
     keep += [pd.Timestamp(r["date"]) for r in references]
-    keep += [d for df in data.values() for d, _, _ in tag_changes(df)]
     cuts = compute_axis_cuts(args, config, data, keep)
 
     if args.suggest_axis_cuts:
