@@ -2,14 +2,15 @@
 #
 # Each annotation has a `date` (the first nightly that shows the change), a
 # `text`, the `flavors` and the `points` that it affects. A plot shows an
-# annotation if the flavor and the point of a plotted line match. A plot of
-# track_finding also shows the annotations of ckf and seeding, and a plot of
-# lrt also shows the annotations of lrt_seeding and lrt_ckf (see the plotter).
-#
+# annotation if the flavor and the point of a plotted line match, with a
+# marker on every matching line. An annotation of a part also belongs to the
+# sums that contain it (the `sum` points of fetcher.yaml): an annotation of
+# ckf shows on a plot of track_finding and of full_track_chain too.
 #
 # Nightly D contains the merges into athena main up to about 21:00 Zurich time
 # on day D. The platform changes (for example el9-gcc13 on 2024-02-27) and the
-# changes of the SPOT machine come from the data, so they are not in this file.
+# changes of the SPOT machine are not in this file: the CPU times are
+# normalized to one machine (machines.yaml), so the plots do not mark them.
 # The machine explains the infrastructure steps: aiatlasbm006 is about 20-25%
 # faster than aiatlasbm001 (2024-02-27 to 006, 2025-11-06 to 001, 2026-07-21 to 006).
 #
