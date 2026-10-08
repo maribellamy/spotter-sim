@@ -19,7 +19,7 @@ from spotter.machines import (
     normalize_point,
     reference_machine,
 )
-from spotter.points import load_fetcher_config, matches, transitive_parts
+from spotter.points import PointData, load_fetcher_config, matches, transitive_parts
 
 
 # one fixed color and marker for each flavor, so that a flavor looks the same in every plot
@@ -258,7 +258,6 @@ def plot_timeseries(
             lx, ly = axis.split_lines(df.index, smooth(df, metric, args.smooth_window))
         ax.plot(lx, ly, "-", lw=2, color=color, zorder=3, solid_capstyle="round")
 
-
     # y axis from zero, because the reader compares magnitudes; a logarithmic
     # axis for data over more than a factor of about 10
     if args.log_y or config.get("log_y", False):
@@ -387,6 +386,7 @@ def collect_annotations(
     config: dict,
     central: list[dict],
     parts: dict,
+    point_data: PointData,
     data: dict[str, pd.DataFrame],
     axis: CompressedAxis,
     metric: str,
@@ -403,7 +403,9 @@ def collect_annotations(
             continue
         df = data[flavor]
         line = smooth(df, metric, window)
-        candidates = [a for a in central if matches(a, flavor, flavor_config["points"], parts)]
+        candidates = [
+            a for a in central if matches(a, flavor, flavor_config["points"], parts, point_data)
+        ]
         candidates += flavor_config.get("annotations", [])
         for a in candidates:
             d = pd.Timestamp(a["date"])
@@ -545,6 +547,7 @@ def main():
     if args.fetcher_config.exists():
         fetcher_config = load_fetcher_config(args.fetcher_config)
     parts = transitive_parts(fetcher_config) if fetcher_config else {}
+    point_data = PointData(args.data_dir)
     data = read_data(
         args.data_dir, config["flavors"], start_date, end_date,
         None if args.raw else machines, hs23_unit(machines, args), fetcher_config,
@@ -561,7 +564,7 @@ def main():
     keep = [
         pd.Timestamp(a["date"])
         for flavor, f in config["flavors"].items()
-        for a in [a for a in central if matches(a, flavor, f["points"], parts)]
+        for a in [a for a in central if matches(a, flavor, f["points"], parts, point_data)]
         + f.get("annotations", [])
     ]
     keep += [pd.Timestamp(r["date"]) for r in references]
@@ -585,7 +588,9 @@ def main():
     annotations = (
         []
         if args.hide_annotations
-        else collect_annotations(config, central, parts, data, axis, metric, args.smooth_window)
+        else collect_annotations(
+            config, central, parts, point_data, data, axis, metric, args.smooth_window
+        )
     )
     with plt.style.context(hep.style.ATLAS):
         plot_timeseries(

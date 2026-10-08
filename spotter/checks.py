@@ -27,7 +27,7 @@ from spotter.machines import (
     normalize_point,
     reference_machine,
 )
-from spotter.points import matches, transitive_parts
+from spotter.points import PointData, matches, transitive_parts
 
 
 def point_names(fetcher_config: dict) -> dict[str, list[str]]:
@@ -288,6 +288,7 @@ def find_steps(
 
 def steps_command(args, fetcher_config: dict, annotations: list[dict], machines: list[dict]):
     parts = transitive_parts(fetcher_config)
+    point_data = PointData(args.data_dir)
     rows = []
     for flavor, points in point_names(fetcher_config).items():
         if args.flavors and flavor not in args.flavors:
@@ -309,7 +310,8 @@ def steps_command(args, fetcher_config: dict, annotations: list[dict], machines:
                 known = [
                     a["text"]
                     for a in annotations
-                    if abs((pd.Timestamp(a["date"]) - d).days) <= 1 and matches(a, flavor, point, parts)
+                    if abs((pd.Timestamp(a["date"]) - d).days) <= 1
+                    and matches(a, flavor, point, parts, point_data)
                 ]
                 rows.append({"flavor": flavor, "point": point, **step, "annotation": "; ".join(known)})
     if not rows:
