@@ -46,11 +46,7 @@ METRICS = {
 
 
 def hs23_unit(machines: list[dict], args) -> float | None:
-    """Return the HS23 per core of the reference machine if the plot shows HS23·s, else None.
-
-    HS23·s is the CPU time in s on the reference machine times its HS23 per
-    core, the unit of the public plots. It needs the normalization.
-    """
+    """Return the HS23 per core of the reference machine if the plot shows HS23·s, else None."""
     if args.raw or args.unit != "hs23" or not has_scale(machines):
         return None
     return reference_machine(machines).get("per_core")
@@ -67,9 +63,8 @@ def read_data(
 ) -> dict[str, pd.DataFrame]:
     """Read the CSV file of the configured point of each flavor.
 
-    With `machines`, the CPU times are normalized to the reference machine
-    (a sum point as the sum of its normalized base points, from
-    `fetcher_config`), and with `hs23` they are multiplied by it, to HS23·s.
+    With `machines`, the CPU times are normalized to the reference machine;
+    with `hs23`, they are multiplied by it, to HS23·s.
     """
     data = {}
     for flavor, flavor_config in flavors.items():
@@ -204,9 +199,9 @@ def plot_timeseries(
     """Plot one metric of all flavors over time.
 
     Each flavor shows its daily values as small markers and a rolling median
-    (or the configured piecewise constant fit) as a line. The plot marks the
-    numbers the annotations in a list below the plot, with a marker on every
-    line that an annotation affects.
+    (or the configured piecewise constant fit) as a line. The annotations are
+    numbered in a list below the plot, with a marker on every line that an
+    annotation affects.
     """
     flavors = config["flavors"]
     # the dates of the config, so that plots with the same dates have the same x range

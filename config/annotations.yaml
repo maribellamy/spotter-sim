@@ -84,8 +84,7 @@ annotations:
   - { date: "2025-11-18", text: "!84326 - Pixel front-end number from module design", flavors: *legacy_all, points: [clusterization] }
 
   # 2026: LRT, new input, GBTS
-  # the nightly has no MR in the tracking code, no externals change (AthenaExternals 25.0.52 -> 25.0.53 is
-  # only the version bump of the same externals) and the same ACTS v45.0.0; clusterization and CKF do not change
+  # no tracking MR, no externals change (25.0.53 is only the version bump), same ACTS v45.0.0
   - { date: "2026-02-17", text: "Legacy track finding -6%, ACTS strip seeding -9% (unclear, no tracking MR)", flavors: [acts_legacy], points: [strip_seeding] }
   - { date: "2026-02-17", text: "Legacy track finding -6%, ACTS strip seeding -9% (unclear, no tracking MR)", flavors: *legacy_all, points: [track_finding] }
   - { date: "2026-03-05", text: "!86476 - LRT pass activated in SPOT", flavors: *acts_all, points: [lrt, full_track_chain_lrt] }

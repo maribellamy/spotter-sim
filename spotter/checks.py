@@ -20,14 +20,8 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from spotter.machines import (
-    base_points,
-    find_machine,
-    load_machines,
-    normalize_point,
-    reference_machine,
-)
-from spotter.points import PointData, matches, transitive_parts
+from spotter.machines import find_machine, load_machines, normalize_point, reference_machine
+from spotter.points import PointData, base_points, matches, transitive_parts
 
 
 def point_names(fetcher_config: dict) -> dict[str, list[str]]:
@@ -70,62 +64,40 @@ def machine_label(machine: dict) -> str:
     return f"{machine['host']} ({period})" if period != ".." else machine["host"]
 
 
-def containing_sums(fetcher_config: dict, flavor: str, point: str) -> list[str]:
-    """Return the sum points of the flavor that contain the point, directly or through another sum."""
-    sums = {
-        p["name"]: p["sum"]
-        for p in fetcher_config["flavors"][flavor]["points"]
-        if "sum" in p
-    }
-    result = []
-    todo = [point]
-    while todo:
-        current = todo.pop()
-        for name, parts in sums.items():
-            if current in parts and name not in result:
-                result.append(name)
-                todo.append(name)
-    return result
-
-
 def measure_machine_scale(
     df: pd.DataFrame,
     *,
     machines: list[dict],
     annotations: list[dict],
     flavor: str,
-    points: list[str],
+    point: str,
     parts: dict,
     window: int,
     min_points: int,
 ) -> tuple[list[dict], list[str]]:
-    """Measure the factor of each machine at the moves between it and the reference.
+    """Measure the factor of a machine at each move between it and the reference.
 
-    For each change of the machine configuration in one series, the function
-    compares the median of the last `window` nightlies on the old machine with
-    the median of the first `window` nightlies on the new machine. An
-    annotation of the series cuts the window, because the code changes there.
-    `points` is the point and the sum points that contain it, because an
-    annotation of a sum (for example `track_finding`) also changes its parts;
-    `parts` (from `transitive_parts`) makes an annotation of a part count too.
-    A move with an annotation on the same day, or with fewer than `min_points`
-    nightlies on one side, is skipped. The function returns the measurements
-    and the reasons of the skipped moves.
+    The factor compares the median of the last `window` nightlies before the
+    move with the first `window` nightlies after it. A window stops at an
+    annotation of the point or of a sum that contains it, and at a platform
+    change. A move with an annotation on the same day, or with fewer than
+    `min_points` nightlies on one side, is skipped with a reason.
     """
-    point = points[0]
     reference = reference_machine(machines)
     df = df[(df["host"] != "unknown") & (df["cpu"] > 0)].copy()
     df["date"] = pd.to_datetime(df["date"])
     df = df.sort_values("date").reset_index(drop=True)
+    position = {id(m): i for i, m in enumerate(machines)}
     index = [
-        next((i for i, m in enumerate(machines) if m is found), -1)
-        for found in (find_machine(machines, h, d) for h, d in zip(df["host"], df["date"]))
+        position.get(id(find_machine(machines, h, d)), -1) for h, d in zip(df["host"], df["date"])
     ]
     df["machine"] = index
     changes = [
         i for i in range(1, len(df))
         if index[i] != index[i - 1] and index[i] >= 0 and index[i - 1] >= 0
     ]
+    # the point, and the sums that contain it
+    points = [point] + [s for s, p in parts.get(flavor, {}).items() if point in p]
     dates = sorted({
         pd.Timestamp(a["date"])
         for a in annotations
@@ -144,8 +116,6 @@ def measure_machine_scale(
             continue
         previous = max([a for a in dates if a < d], default=pd.Timestamp.min)
         following = min([a for a in dates if a > d], default=pd.Timestamp.max)
-        # the window stops at an annotation and at a platform change, because the
-        # code changes there; a platform change on the move itself stays in the factor
         platforms = (df["platform"][i - 1], df["platform"][i])
         before = df.iloc[max(0, i - window):i]
         before = before[
@@ -187,16 +157,15 @@ def machine_scale_command(args, fetcher_config: dict, annotations: list[dict], m
         for point in points:
             if args.points and point not in args.points:
                 continue
-            # only the base points get a factor; a sum is the sum of its normalized parts
+            # only a base point gets a factor
             if base_points(fetcher_config, flavor, point) != [point]:
                 continue
             df = read_point(args.data_dir, flavor, point)
             if df is None or "value" in df or "host" not in df:
                 continue
             r, s = measure_machine_scale(
-                df, machines=machines, annotations=annotations, flavor=flavor,
-                points=[point] + containing_sums(fetcher_config, flavor, point), parts=parts,
-                window=args.window, min_points=args.min_points,
+                df, machines=machines, annotations=annotations, flavor=flavor, point=point,
+                parts=parts, window=args.window, min_points=args.min_points,
             )
             rows += r
             skipped += s
@@ -217,8 +186,7 @@ def machine_scale_command(args, fetcher_config: dict, annotations: list[dict], m
         print(f"# skipped: {s}")
     print()
 
-    # the factor of a point is the geometric mean over the flavors and the moves;
-    # a flavor gets its own factor if it deviates by more than the split threshold
+    # geometric mean over the flavors and the moves; a flavor that deviates gets its own factor
     measured["log"] = np.log(measured["factor"])
     for machine, g in measured.groupby("machine"):
         m = machines[machine]

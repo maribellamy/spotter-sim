@@ -1,10 +1,4 @@
-"""The points of the fetcher config, and which sums contain which parts.
-
-A sum point (for example `track_finding`) adds its parts (`seeding` and
-`ckf`), and a part can be a sum itself. An annotation of a part also belongs
-to every sum that contains it, so that one annotation of the CKF shows on the
-track finding plot and on the full chain plot.
-"""
+"""The points of the fetcher config: base points, sums and annotation matching."""
 
 from pathlib import Path
 
@@ -17,11 +11,24 @@ def load_fetcher_config(path: Path) -> dict:
         return yaml.safe_load(f)
 
 
+def sums_of(fetcher_config: dict, flavor: str) -> dict[str, list[str]]:
+    """Return the parts of each sum point of the flavor, as in the config."""
+    return {p["name"]: p["sum"] for p in fetcher_config["flavors"][flavor]["points"] if "sum" in p}
+
+
+def base_points(fetcher_config: dict, flavor: str, point: str) -> list[str]:
+    """Return the base points (`map` points) of a sum, through nested sums; a base point returns itself."""
+    sums = sums_of(fetcher_config, flavor)
+    if point not in sums:
+        return [point]
+    return [b for part in sums[point] for b in base_points(fetcher_config, flavor, part)]
+
+
 def transitive_parts(fetcher_config: dict) -> dict[str, dict[str, set[str]]]:
     """Return the parts of each sum point of each flavor, through nested sums."""
     result = {}
-    for flavor, config in fetcher_config["flavors"].items():
-        sums = {p["name"]: p["sum"] for p in config["points"] if "sum" in p}
+    for flavor in fetcher_config["flavors"]:
+        sums = sums_of(fetcher_config, flavor)
         parts = {}
         for name in sums:
             seen: set[str] = set()
@@ -38,7 +45,7 @@ def transitive_parts(fetcher_config: dict) -> dict[str, dict[str, set[str]]]:
 
 
 class PointData:
-    """The dates with a value of each point of each flavor, read on demand from the point CSVs."""
+    """The dates with a value of each point, read on demand from the point CSVs."""
 
     def __init__(self, data_dir: Path):
         self.data_dir = data_dir
@@ -61,13 +68,11 @@ def matches(
     parts: dict | None = None,
     point_data: PointData | None = None,
 ) -> bool:
-    """Return True if an annotation of the central file belongs to a plotted line.
+    """Return True if an annotation belongs to the point of the flavor.
 
-    The annotation belongs to the line if it lists the flavor, and the point
-    or one of the parts of the point (`parts` from `transitive_parts`). With
-    `point_data`, a part counts only if it has a value in the flavor around
-    the date of the annotation: the strip seeding is a part of the ACTS
-    default track finding, but it does not run in the fast configuration.
+    The annotation lists the flavor, and the point or one of its parts
+    (`parts` from `transitive_parts`). With `point_data`, a part counts only
+    if it has a value in the flavor around the date of the annotation.
     """
     if flavor not in annotation.get("flavors", []):
         return False

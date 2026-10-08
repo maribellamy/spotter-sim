@@ -35,15 +35,15 @@ python -m spotter.fetcher --refetch
 
 `config/fetcher.yaml` explains the `map`, `sum`, `optional`, `mask` and `sources` options.
 
-The plotter can cut quiet periods out of the x axis. A quiet period is a date range in which no plotted series changes by more than a relative threshold. The cuts never hide an annotation, a platform change or a move of a flavor between SPOT jobs.
+The plotter can cut quiet periods out of the x axis. A quiet period is a date range in which no plotted series changes by more than a relative threshold. The cuts never hide an annotation.
 
 `config/annotations.yaml` holds the annotations for all plots. Each annotation lists the flavors and the points that it affects, so a change appears on every plot that shows one of them. An annotation of a part also belongs to every sum that contains it (the `sum` points of `config/fetcher.yaml`): an annotation of `ckf` shows on the track finding plot and on the full chain plot too. An annotation gets a marker with the same number on every line that it affects.
 
-`config/machines.yaml` holds the CPU model and the HS23 (HEPScore23) benchmark of each SPOT machine. The plots name the machine, its CPU and its HS23 below the x axis and at each machine change.
+`config/machines.yaml` holds the CPU model and the HS23 (HEPScore23) benchmark of each SPOT machine. The plots name the machine, its CPU and its HS23 below the x axis.
 
-One machine is the reference (`reference: true`). The other machine periods have `scale` factors: the CPU time on that machine divided by the CPU time on the reference machine for the same code, per base algorithm (a `map` point of `config/fetcher.yaml`), and per flavor and point where the flavors differ. A sum point is the sum of its normalized parts, because the factor of a sum depends on the mix of its parts. The plotter and the checks divide the CPU times by these factors, so that a series continues across a machine change. The plots show the CPU time in HS23·s: the normalized time in s times the HS23 per core of the reference machine, as in the public plots. The job runs one thread, so the unit is only an estimate of the throughput. `--unit s` gives the normalized seconds, and `--raw` the measured seconds.
+One machine is the reference (`reference: true`). The other machine periods have `scale` factors: the CPU time on that machine divided by the CPU time on the reference machine for the same code, per base algorithm (a `map` point of `config/fetcher.yaml`), and per flavor where the flavors differ. A sum point is the sum of its normalized parts. The plotter and the checks divide the CPU times by these factors, so that a series continues across a machine change. HS23 does not predict these factors (the single-thread ratio differs from the throughput ratio, and it differs between the algorithms), so the factors are measured from the data.
 
-HS23 does not give these factors. It measures the throughput of the whole machine, so the per-core value with SMT on is wrong by about 45% for a single thread, and the ratio between two machines differs between the algorithms by tens of percent (for example 1.15 for the clusterization and 1.29 for the CKF between aiatlasbm001 with SMT on and aiatlasbm006).
+The plots show the CPU time in HS23·s: the normalized time in s times the HS23 per core of the reference machine, as in the public plots. The job runs one thread, so the unit is only an estimate of the throughput. `--unit s` gives the normalized seconds, and `--raw` the measured seconds.
 
 A plot config can set `log_y: true` for data that changes by more than a factor of about 10.
 

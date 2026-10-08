@@ -1,22 +1,17 @@
-"""The SPOT machines, and the normalization of the CPU times to one reference machine.
+"""The SPOT machines of config/machines.yaml, and the normalization of the CPU times.
 
-`config/machines.yaml` has one entry per machine period (a host with an
-optional `start` and `end`). One entry is the reference (`reference: true`).
-The other entries can have a `scale` map: the CPU time on that machine divided
-by the CPU time on the reference machine for the same code, per point. The
-plotter and the checks divide the CPU times by these factors, so that a series
-continues across a machine change.
-
-    scale:
-      default: 1.19                     # points without their own factor
-      ckf: 1.30                         # one point of every flavor
-      legacy_default.space_point_formation: 1.27   # one point of one flavor
+One machine period is the reference (`reference: true`). The others have a
+`scale` map: the CPU time on that machine divided by the CPU time on the
+reference for the same code, with the keys `default`, `<point>` and
+`<flavor>.<point>`.
 """
 
 from pathlib import Path
 
 import pandas as pd
 import yaml
+
+from spotter.points import base_points
 
 
 def load_machines(path: Path) -> list[dict]:
@@ -48,12 +43,7 @@ def has_scale(machines: list[dict]) -> bool:
 
 
 def scale_factor(machine: dict | None, flavor: str, point: str) -> float:
-    """Return the CPU time on the machine divided by the CPU time on the reference machine.
-
-    The factor of `flavor.point` wins over the factor of `point`, which wins
-    over `default`. A machine without factors, or an unknown machine, has the
-    factor 1.
-    """
+    """Return the factor of a point: `flavor.point`, else `point`, else `default`, else 1."""
     scale = (machine or {}).get("scale") or {}
     for key in (f"{flavor}.{point}", point, "default"):
         if key in scale:
@@ -66,8 +56,7 @@ def normalize_cpu(
 ) -> pd.DataFrame:
     """Divide the `cpu` column by the factor of the machine of each row.
 
-    A row with the host `unknown` takes the host of the previous row, because
-    the SPOT job stays on its machine. The other columns do not change.
+    A row with the host `unknown` takes the host of the previous row.
     """
     if "cpu" not in df or "host" not in df or not has_scale(machines):
         return df
@@ -81,17 +70,6 @@ def normalize_cpu(
     return df
 
 
-def base_points(fetcher_config: dict, flavor: str, point: str) -> list[str]:
-    """Return the base points that a sum point adds, through nested sums.
-
-    A base point (a `map` point of the fetcher config) returns itself.
-    """
-    sums = {p["name"]: p["sum"] for p in fetcher_config["flavors"][flavor]["points"] if "sum" in p}
-    if point not in sums:
-        return [point]
-    return [b for part in sums[point] for b in base_points(fetcher_config, flavor, part)]
-
-
 def normalize_point(
     df: pd.DataFrame,
     *,
@@ -103,10 +81,9 @@ def normalize_point(
 ) -> pd.DataFrame:
     """Normalize the `cpu` column of a point to the reference machine.
 
-    The factors apply to the base points only. A sum point becomes the sum of
-    its normalized base points (read from `data_dir`, a missing base point
-    counts as zero, as in the fetcher), because the factor of a sum depends on
-    the mix of its parts, and the mix changes with the code.
+    A sum point is the sum of its normalized base points (from `data_dir`, a
+    missing base point counts as zero), because the factor of a sum depends
+    on the mix of its parts.
     """
     if "cpu" not in df or not has_scale(machines):
         return df
