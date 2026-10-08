@@ -22,8 +22,6 @@ flavors:
 
     annotations: []
 
-    compare_to_other: []
-
   acts_default:
     label: "ACTS Space Point Formation"
     points: space_point_formation
@@ -32,4 +30,3 @@ flavors:
 
     annotations: []
 
-    compare_to_other: []

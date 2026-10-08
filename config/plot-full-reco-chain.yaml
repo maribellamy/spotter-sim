@@ -26,8 +26,6 @@ flavors:
 
     annotations: []
 
-    compare_to_other: []
-
   legacy_fast:
     label: "Athena Fast Tracking"
     points: full_track_chain
@@ -35,8 +33,6 @@ flavors:
     piecewise_const: []
 
     annotations: []
-
-    compare_to_other: []
 
   # the full ACTS configuration; the default until 2025-05-08
   acts_legacy:
@@ -47,8 +43,6 @@ flavors:
 
     annotations: []
 
-    compare_to_other: ["legacy_default", "2024-09-28"]
-
   # the fast ACTS configuration; the default from 2025-05-09
   acts_fast:
     label: "Acts-based Fast Tracking"
@@ -58,4 +52,3 @@ flavors:
 
     annotations: []
 
-    compare_to_other: []

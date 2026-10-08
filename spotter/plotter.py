@@ -1,12 +1,10 @@
 from datetime import date
 import argparse
 from pathlib import Path
-import textwrap
 
 import yaml
 
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.transforms import blended_transform_factory
@@ -418,112 +416,6 @@ def collect_annotations(
     return sorted(result.values(), key=lambda a: a["date"])
 
 
-def plot_relative(
-    args,
-    config: dict,
-    flavor: str,
-    data: dict[str, pd.DataFrame],
-    central: list[dict],
-    parts: dict,
-):
-    """Plot the CPU time at the selected annotations relative to another flavor."""
-    point = config["flavors"][flavor]["points"]
-    selected_cpu_values = []
-    selected_dates = []
-    annotations = [a for a in central if matches(a, flavor, point, parts)]
-    annotations += config["flavors"][flavor].get("annotations", [])
-    for annotation in sorted(annotations, key=lambda a: a["date"]):
-        d = pd.Timestamp(annotation["date"])
-        if not annotation.get("select", False) or len(data[flavor].loc[d:d]) == 0:
-            continue
-        selected_cpu_values.append([data[flavor].loc[d:d].cpu.iloc[0], annotation["label"]])
-        selected_dates.append(d)
-    if not selected_cpu_values:
-        return
-
-    with plt.style.context(hep.style.ATLAS):
-        compare_to_flavor, compare_to_date = config["flavors"][flavor]["compare_to_other"]
-        compare_to_cpu = (
-            data[compare_to_flavor].loc[compare_to_date:compare_to_date].cpu.iloc[0]
-        )
-        cpu_abs = np.array([t for t, _ in selected_cpu_values], dtype=np.float64)
-        cpu_labels = [f"{i}: {l}" for i, (_, l) in enumerate(selected_cpu_values, start=1)]
-        cpu_rel = cpu_abs / compare_to_cpu
-        cpu_rel = np.insert(cpu_rel, 0, cpu_rel[0])
-        cpu_rel = np.insert(cpu_rel, -1, cpu_rel[-1])
-
-        compare_fig, compare_ax = plt.subplots(figsize=(10, 5))
-
-        # this gets rid of the vertical lines. we clip in y later anyway
-        xrange = np.arange(len(cpu_rel))
-        xrange[0] -= 5
-        xrange[-1] += 5
-        compare_ax.fill_between(
-            xrange,
-            cpu_rel,
-            fc="#6699ff",  # kAzure - 4
-            ec="#003399",  # kAzure - 6
-            lw=3,
-        )
-
-        compare_ax.axhline(1, color="#003399", lw=3, ls="--")
-
-        compare_ax.set_xlim(0, len(cpu_rel) - 1)
-        _, ymax = compare_ax.get_ylim()
-        compare_ax.set_ylim(0.5, ymax + 0.2)
-
-        compare_ax.set_ylabel("Relative CPU time per event")
-        compare_ax.set_xlabel("Work Progress", labelpad=0)
-
-        ticks = np.arange(len(cpu_rel) - 1)
-        compare_ax.set_xticks(ticks)
-        compare_ax.set_xticklabels([])
-        compare_ax.set_xticks(np.arange(len(cpu_rel) - 1) + 0.5, minor=True)
-
-        compare_ax.set_yticks([1, 2, 3, 4, 5, 6])
-
-        compare_ax.set_xticklabels(
-            cpu_labels + [""],
-            rotation=-22,
-            ha="left",
-            va="top",
-            ma="center",
-            fontsize=15,
-            minor=True,
-        )
-        compare_ax.tick_params(axis="x", which="minor", tick1On=False, tick2On=False)
-
-        hep.atlas.text("Internal", fontsize=16, pad=0)
-
-        compare_title = config.get(
-            "compare_title",
-            f"{config['flavors'][flavor]['label']} vs {config['flavors'][compare_to_flavor]['label']} "
-            "track seeding and finding CPU/Event",
-        )
-        text = rf"""
-HL-LHC, $\sqrt{{s}}$ = 14 TeV, $t\bar{{t}}$, $\langle\mu\rangle$ = 200
-{compare_title}
-Start date: {selected_dates[0]:%d %B %Y}
-End date: {selected_dates[-1]:%d %B %Y}
-        """
-        text = textwrap.dedent(text.strip())
-
-        compare_ax.text(
-            0.97,
-            0.96,
-            s=text,
-            transform=compare_ax.transAxes,
-            ha="right",
-            va="top",
-            ma="left",
-        )
-
-        compare_fig.tight_layout()
-
-        compare_fig.savefig(args.plots_dir / f"cpu_{flavor}_rel.png")
-        compare_fig.savefig(args.plots_dir / f"cpu_{flavor}_rel.pdf")
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -710,11 +602,6 @@ def main():
                 args=args, config=config, data=data, axis=axis, metric="malloc",
                 annotations=[], output=args.plots_dir / "mem", machines=machines, references=references,
             )
-
-    if not args.hide_annotations:
-        for flavor, flavor_config in config["flavors"].items():
-            if flavor_config.get("compare_to_other") and metric == "cpu":
-                plot_relative(args, config, flavor, data, central, parts)
 
     if args.show:
         plt.show()

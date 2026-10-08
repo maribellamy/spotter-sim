@@ -23,8 +23,6 @@ flavors:
 
     annotations: []
 
-    compare_to_other: []
-
   acts_default:
     label: "ACTS Ambiguity Resolution"
     points: ambiguity
@@ -37,4 +35,3 @@ flavors:
 
     annotations: []
 
-    compare_to_other: []
