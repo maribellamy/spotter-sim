@@ -18,7 +18,7 @@ from spotter.machines import (
     find_machine,
     has_scale,
     load_machines,
-    normalize_cpu,
+    normalize_point,
     reference_machine,
 )
 from spotter.points import load_fetcher_config, matches, transitive_parts
@@ -65,11 +65,13 @@ def read_data(
     end_date: date,
     machines: list[dict] | None = None,
     hs23: float | None = None,
+    fetcher_config: dict | None = None,
 ) -> dict[str, pd.DataFrame]:
     """Read the CSV file of the configured point of each flavor.
 
-    With `machines`, the CPU times are normalized to the reference machine,
-    and with `hs23` they are multiplied by it, to HS23·s.
+    With `machines`, the CPU times are normalized to the reference machine
+    (a sum point as the sum of its normalized base points, from
+    `fetcher_config`), and with `hs23` they are multiplied by it, to HS23·s.
     """
     data = {}
     for flavor, flavor_config in flavors.items():
@@ -81,7 +83,10 @@ def read_data(
             print(f"{file}: no data from {start_date} to {end_date}")
             continue
         if machines:
-            df = normalize_cpu(df, machines, flavor, flavor_config["points"])
+            df = normalize_point(
+                df, data_dir=data_dir, machines=machines, flavor=flavor,
+                point=flavor_config["points"], fetcher_config=fetcher_config,
+            )
         if hs23 and "cpu" in df:
             df = df.assign(cpu=df["cpu"] * hs23)
         data[flavor] = df
@@ -633,7 +638,8 @@ def main():
         type=Path,
         default="config/fetcher.yaml",
         help="Path to the fetcher config, for the sums of the points: an annotation "
-        "of a part also belongs to the sums that contain it",
+        "of a part also belongs to the sums that contain it, and a sum is normalized "
+        "as the sum of its normalized base points",
     )
     args = parser.parse_args()
 
@@ -643,13 +649,14 @@ def main():
     start_date = date.fromisoformat(config["dates"]["start"])
     end_date = date.fromisoformat(config["dates"]["end"])
     machines = load_machines(args.machines)
+    fetcher_config = None
+    if args.fetcher_config.exists():
+        fetcher_config = load_fetcher_config(args.fetcher_config)
+    parts = transitive_parts(fetcher_config) if fetcher_config else {}
     data = read_data(
         args.data_dir, config["flavors"], start_date, end_date,
-        None if args.raw else machines, hs23_unit(machines, args),
+        None if args.raw else machines, hs23_unit(machines, args), fetcher_config,
     )
-    parts = {}
-    if args.fetcher_config.exists():
-        parts = transitive_parts(load_fetcher_config(args.fetcher_config))
     central = []
     references = []
     if args.annotations.exists():

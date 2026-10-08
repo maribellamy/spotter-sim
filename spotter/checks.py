@@ -20,7 +20,13 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from spotter.machines import find_machine, load_machines, normalize_cpu, reference_machine
+from spotter.machines import (
+    base_points,
+    find_machine,
+    load_machines,
+    normalize_point,
+    reference_machine,
+)
 from spotter.points import matches, transitive_parts
 
 
@@ -33,7 +39,11 @@ def point_names(fetcher_config: dict) -> dict[str, list[str]]:
 
 
 def read_point(
-    data_dir: Path, flavor: str, point: str, machines: list[dict] | None = None
+    data_dir: Path,
+    flavor: str,
+    point: str,
+    machines: list[dict] | None = None,
+    fetcher_config: dict | None = None,
 ) -> pd.DataFrame | None:
     """Read one point CSV, with the value in the column `y`.
 
@@ -46,7 +56,10 @@ def read_point(
     if len(df) == 0:
         return None
     if machines:
-        df = normalize_cpu(df, machines, flavor, point)
+        df = normalize_point(
+            df, data_dir=data_dir, machines=machines, flavor=flavor, point=point,
+            fetcher_config=fetcher_config,
+        )
     df["y"] = df["value"] if "value" in df else df["cpu"]
     return df.reset_index(drop=True)
 
@@ -174,6 +187,9 @@ def machine_scale_command(args, fetcher_config: dict, annotations: list[dict], m
         for point in points:
             if args.points and point not in args.points:
                 continue
+            # only the base points get a factor; a sum is the sum of its normalized parts
+            if base_points(fetcher_config, flavor, point) != [point]:
+                continue
             df = read_point(args.data_dir, flavor, point)
             if df is None or "value" in df or "host" not in df:
                 continue
@@ -279,7 +295,9 @@ def steps_command(args, fetcher_config: dict, annotations: list[dict], machines:
         for point in points:
             if args.points and point not in args.points:
                 continue
-            df = read_point(args.data_dir, flavor, point, None if args.raw else machines)
+            df = read_point(
+                args.data_dir, flavor, point, None if args.raw else machines, fetcher_config
+            )
             if df is None or len(df) < 2 * args.window:
                 continue
             # a validation point (for example an efficiency) changes by about 1%

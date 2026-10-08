@@ -17,10 +17,13 @@
 # (`reference: true`). `scale` is the CPU time on a machine divided by the CPU
 # time on the reference machine for the same code, measured from the nightlies
 # around the moves between the machines (python -m spotter.checks machine-scale
-# prints the blocks below). `default` applies to the points without their own
-# factor, `point` to that point of every flavor, and `flavor.point` to that
-# point of one flavor (the tool adds one if the flavor deviates by more than 2%). The plotter and the checks divide the CPU times by
-# these factors.
+# prints the blocks below). The factors apply to the base points (the `map`
+# points of config/fetcher.yaml); a sum point is the sum of its normalized
+# parts, because the factor of a sum depends on the mix of its parts.
+# `default` applies to the points without their own factor, `point` to that
+# point of every flavor, and `flavor.point` to that point of one flavor (the
+# tool adds one if the flavor deviates by more than 2%). The plotter and the
+# checks divide the CPU times by these factors.
 
 machines:
   - host: aiatlasbm001
@@ -33,40 +36,31 @@ machines:
     # the moves include a platform change (centos7-gcc11 -> el9-gcc13), so the factors include it
     # python -m spotter.checks machine-scale --window 7 --min-points 3
     scale:
-      default: 1.333
-      ambiguity: 1.333
+      default: 1.337
+      ambiguity: 1.326
       ambiguity_score: 1.225
       ambiguity_solver: 1.348
       ckf: 1.313
-      clusterization: 1.390
-      full_track_chain: 1.332
       pixel_clusterization: 1.395
       pixel_seeding: 1.296
       pixel_space_point_formation: 1.456
-      seeding: 1.278
-      space_point_formation: 1.521
+      space_point_formation: 1.586
       strip_clusterization: 1.372
       strip_seeding: 1.200
       strip_space_point_formation: 1.461
-      track_finding: 1.302
-      acts_default.clusterization: 1.325
+      track_finding: 1.296
       acts_default.pixel_clusterization: 1.285
-      acts_default.space_point_formation: 1.459
       acts_default.strip_clusterization: 1.431
-      acts_legacy.clusterization: 1.325
       acts_legacy.pixel_clusterization: 1.285
-      acts_legacy.space_point_formation: 1.459
       acts_legacy.strip_clusterization: 1.431
-      legacy_default.clusterization: 1.472
       legacy_default.pixel_clusterization: 1.528
       legacy_default.space_point_formation: 1.475
       legacy_default.strip_clusterization: 1.320
       legacy_default.track_finding: 1.270
-      legacy_fast.clusterization: 1.445
-      legacy_fast.full_track_chain: 1.379
       legacy_fast.pixel_clusterization: 1.504
       legacy_fast.space_point_formation: 1.705
       legacy_fast.strip_clusterization: 1.309
+      legacy_fast.track_finding: 1.324
 
   - host: aiatlasbm001
     start: "2025-01-01"
@@ -77,35 +71,26 @@ machines:
     # aiatlasbm001 (2025-01-01..): factors from the moves on 2025-11-06, 2026-07-21
     # python -m spotter.checks machine-scale --window 7 --min-points 3
     scale:
-      default: 1.209
-      ambiguity: 1.164
+      default: 1.203
+      ambiguity: 1.161
       ambiguity_score: 1.212
       ambiguity_solver: 1.166
       ckf: 1.293
-      clusterization: 1.166
-      full_track_chain: 1.209
       pixel_clusterization: 1.153
       pixel_seeding: 1.195
       pixel_space_point_formation: 1.191
       prd_map: 1.464
       region_creator: 1.823
-      seeding: 1.202
-      space_point_formation: 1.254
+      space_point_formation: 1.315
       strip_clusterization: 1.188
       strip_seeding: 1.333
       strip_space_point_formation: 1.278
-      track_finding: 1.222
-      acts_default.space_point_formation: 1.191
-      acts_fast.space_point_formation: 1.191
-      acts_legacy.full_track_chain: 1.251
+      track_finding: 1.192
       acts_legacy.region_creator: 1.757
-      acts_legacy.seeding: 1.236
-      acts_legacy.track_finding: 1.263
+      legacy_default.space_point_formation: 1.265
       legacy_default.strip_clusterization: 1.214
-      legacy_fast.full_track_chain: 1.181
       legacy_fast.space_point_formation: 1.366
       legacy_fast.strip_clusterization: 1.215
-      legacy_fast.track_finding: 1.175
 
   - host: aiatlasbm006
     reference: true

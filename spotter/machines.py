@@ -79,3 +79,48 @@ def normalize_cpu(
     df = df.copy()
     df["cpu"] = df["cpu"] / factors
     return df
+
+
+def base_points(fetcher_config: dict, flavor: str, point: str) -> list[str]:
+    """Return the base points that a sum point adds, through nested sums.
+
+    A base point (a `map` point of the fetcher config) returns itself.
+    """
+    sums = {p["name"]: p["sum"] for p in fetcher_config["flavors"][flavor]["points"] if "sum" in p}
+    if point not in sums:
+        return [point]
+    return [b for part in sums[point] for b in base_points(fetcher_config, flavor, part)]
+
+
+def normalize_point(
+    df: pd.DataFrame,
+    *,
+    data_dir: Path,
+    machines: list[dict],
+    flavor: str,
+    point: str,
+    fetcher_config: dict | None,
+) -> pd.DataFrame:
+    """Normalize the `cpu` column of a point to the reference machine.
+
+    The factors apply to the base points only. A sum point becomes the sum of
+    its normalized base points (read from `data_dir`, a missing base point
+    counts as zero, as in the fetcher), because the factor of a sum depends on
+    the mix of its parts, and the mix changes with the code.
+    """
+    if "cpu" not in df or not has_scale(machines):
+        return df
+    bases = base_points(fetcher_config, flavor, point) if fetcher_config else [point]
+    if bases == [point]:
+        return normalize_cpu(df, machines, flavor, point)
+    dates = pd.to_datetime(df["date"]) if "date" in df else df.index
+    total = pd.Series(0.0, index=pd.DatetimeIndex(dates))
+    for base in bases:
+        path = data_dir / f"{flavor}_{base}.csv"
+        if not path.exists():
+            continue
+        part = normalize_cpu(pd.read_csv(path, parse_dates=["date"]), machines, flavor, base)
+        total += part.set_index("date")["cpu"].reindex(total.index).fillna(0.0)
+    df = df.copy()
+    df["cpu"] = total.to_numpy()
+    return df

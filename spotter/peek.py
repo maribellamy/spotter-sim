@@ -21,7 +21,8 @@ from pathlib import Path
 import pandas as pd
 
 from spotter.fetcher import raw_paths, read_table
-from spotter.machines import has_scale, load_machines, normalize_cpu, reference_machine
+from spotter.machines import has_scale, load_machines, normalize_point, reference_machine
+from spotter.points import load_fetcher_config
 
 
 def window(df: pd.DataFrame, center: date, days: int) -> pd.DataFrame:
@@ -40,6 +41,7 @@ def logs_info(raw_dir: Path, tag: str) -> pd.DataFrame:
 
 def show_points(args):
     machines = [] if args.raw else load_machines(args.machines)
+    fetcher_config = load_fetcher_config(args.fetcher_config) if args.fetcher_config.exists() else None
     if has_scale(machines):
         print(f"CPU times normalized to {reference_machine(machines)['host']} (--raw for the measured times)")
     columns = {}
@@ -49,7 +51,10 @@ def show_points(args):
         if not path.exists():
             print(f"{path}: no such file")
             continue
-        df = normalize_cpu(pd.read_csv(path), machines, args.flavor, point)
+        df = normalize_point(
+            pd.read_csv(path), data_dir=args.data_dir, machines=machines, flavor=args.flavor,
+            point=point, fetcher_config=fetcher_config,
+        )
         df = window(df, args.date, args.days)
         columns[point] = df.set_index("date")["value" if "value" in df else "cpu"]
         extra = [c for c in ("tag", "platform", "host") if c in df]
@@ -90,6 +95,7 @@ def main():
     parser.add_argument("--days", type=int, default=5, help="days before and after the date (default 5)")
     parser.add_argument("--data-dir", type=Path, default="data")
     parser.add_argument("--machines", type=Path, default="config/machines.yaml")
+    parser.add_argument("--fetcher-config", type=Path, default="config/fetcher.yaml")
     parser.add_argument(
         "--raw", action="store_true",
         help="show the measured CPU times, without the normalization to the reference machine",
