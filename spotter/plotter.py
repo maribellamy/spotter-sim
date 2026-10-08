@@ -15,6 +15,13 @@ import mplhep as hep
 
 from spotter.axis_cuts import CompressedAxis, find_quiet_periods, periods_to_cuts
 from spotter.fitter import piecewise_const
+from spotter.machines import (
+    find_machine,
+    has_scale,
+    load_machines,
+    normalize_cpu,
+    reference_machine,
+)
 
 
 # one fixed color and marker for each flavor, so that a flavor looks the same in every plot
@@ -49,9 +56,16 @@ METRICS = {
 
 
 def read_data(
-    data_dir: Path, flavors: dict, start_date: date, end_date: date
+    data_dir: Path,
+    flavors: dict,
+    start_date: date,
+    end_date: date,
+    machines: list[dict] | None = None,
 ) -> dict[str, pd.DataFrame]:
-    """Read the CSV file of the configured point of each flavor."""
+    """Read the CSV file of the configured point of each flavor.
+
+    With `machines`, the CPU times are normalized to the reference machine.
+    """
     data = {}
     for flavor, flavor_config in flavors.items():
         file = data_dir / f"{flavor}_{flavor_config['points']}.csv"
@@ -61,6 +75,8 @@ def read_data(
         if len(df) == 0:
             print(f"{file}: no data from {start_date} to {end_date}")
             continue
+        if machines:
+            df = normalize_cpu(df, machines, flavor, flavor_config["points"])
         data[flavor] = df
     return data
 
@@ -149,16 +165,6 @@ def mark_below_axis(
             )
 
 
-def find_machine(machines: list[dict], host: str, d: pd.Timestamp) -> dict | None:
-    """Return the configuration of a SPOT machine on a date, from config/machines.yaml."""
-    for m in machines:
-        start = pd.Timestamp(m.get("start", "1900-01-01"))
-        end = pd.Timestamp(m.get("end", "2100-01-01"))
-        if m["host"] == host and start <= d <= end:
-            return m
-    return None
-
-
 def per_core_label(machine: dict) -> str:
     """Return the HS23 per logical CPU, which is per thread if SMT is on."""
     unit = "thread" if "SMT on" in machine["cores"] else "core"
@@ -170,7 +176,9 @@ def short_cpu(machine: dict) -> str:
     return re.sub(r"^(AMD|Intel) ", "", machine["cpu"]).split(" @")[0]
 
 
-def machine_captions(machines: list[dict], data: dict[str, pd.DataFrame]) -> list[str]:
+def machine_captions(
+    machines: list[dict], data: dict[str, pd.DataFrame], normalized: bool
+) -> list[str]:
     """Return one caption line for each machine configuration in the plotted data."""
     seen = []
     for df in data.values():
@@ -189,6 +197,13 @@ def machine_captions(machines: list[dict], data: dict[str, pd.DataFrame]) -> lis
             "HS23 = HEPScore23 benchmark score of the whole machine, higher is faster "
             "(HEPiX values for the same CPU model and core configuration, "
             "w3.hepix.org/benchmarking/scores_HS23.html)"
+        )
+    reference = reference_machine(machines)
+    if normalized and reference is not None and any(m.get("scale") for m in seen):
+        lines.append(
+            f"CPU times normalized to {reference['host']}: the values of the other machines are "
+            "divided by the ratio measured per algorithm at the machine changes "
+            "(config/machines.yaml), so that a line continues across a machine change"
         )
     return lines
 
@@ -225,7 +240,7 @@ def plot_timeseries(
         if start <= pd.Timestamp(r["date"]) <= end and not axis.is_cut([pd.Timestamp(r["date"])])[0]
     ]
     captions = [f"{r['name']}: data {r['range']}" for r in visible]
-    captions += machine_captions(machines, data)
+    captions += machine_captions(machines, data, metric == "cpu" and not args.raw)
     width, h_head, h_plot, h_ticks, h_row, h_foot = 15.0, 1.15, 5.6, 0.75, 0.27, 0.35
     h_caption = 0.22 * len(captions) + (0.2 if captions else 0)
     height = h_head + h_plot + h_ticks + h_caption + rows * h_row + (h_foot if rows else 0.1)
@@ -326,6 +341,8 @@ def plot_timeseries(
         ax.set_ylim(*config["ylim"])
         mark_below_axis(ax, axis, data, metric, config["ylim"][0], args.smooth_window)
     ylabel = config.get("ylabel", METRICS[metric]) if metric == "value" else METRICS[metric]
+    if metric == "cpu" and not args.raw and has_scale(machines):
+        ylabel += f", normalized to {reference_machine(machines)['host']}"
     ax.set_ylabel(ylabel, fontsize=16)
 
     ax.grid(axis="y", color=GRID, lw=0.8, zorder=0)
@@ -670,6 +687,12 @@ def main():
         action="store_true",
         help="Use a logarithmic y axis (the config can also set `log_y: true`)",
     )
+    parser.add_argument(
+        "--raw",
+        action="store_true",
+        help="Plot the measured CPU times, without the normalization to the reference "
+        "machine of config/machines.yaml",
+    )
     args = parser.parse_args()
 
     with open(args.config, "r") as f:
@@ -677,11 +700,10 @@ def main():
 
     start_date = date.fromisoformat(config["dates"]["start"])
     end_date = date.fromisoformat(config["dates"]["end"])
-    data = read_data(args.data_dir, config["flavors"], start_date, end_date)
-    machines = []
-    if args.machines.exists():
-        with open(args.machines, "r") as f:
-            machines = yaml.safe_load(f)["machines"]
+    machines = load_machines(args.machines)
+    data = read_data(
+        args.data_dir, config["flavors"], start_date, end_date, None if args.raw else machines
+    )
     central = []
     references = []
     if args.annotations.exists():

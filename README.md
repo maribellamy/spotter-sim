@@ -45,6 +45,10 @@ The plotter can cut quiet periods out of the x axis. A quiet period is a date ra
 
 `config/machines.yaml` holds the CPU model and the HS23 (HEPScore23) benchmark of each SPOT machine. The plots name the machine, its CPU and its HS23 below the x axis and at each machine change.
 
+One machine is the reference (`reference: true`). The other machine periods have `scale` factors: the CPU time on that machine divided by the CPU time on the reference machine for the same code, per point, and per flavor and point where the flavors differ. The plotter and the checks divide the CPU times by these factors, so that a series continues across a machine change, and the y axis names the reference machine. `--raw` uses the measured times.
+
+HS23 does not give these factors. It measures the throughput of the whole machine, so the per-core value with SMT on is wrong by about 45% for a single thread, and the ratio between two machines differs between the algorithms by tens of percent (for example 1.15 for the clusterization and 1.29 for the CKF between aiatlasbm001 with SMT on and aiatlasbm006).
+
 A plot config can set `log_y: true` for data that changes by more than a factor of about 10.
 
 ```bash
@@ -76,6 +80,10 @@ python -m spotter.checks gaps
 python -m spotter.peek 2025-07-09 --flavor acts_fast --points ckf pixel_seeding reco_efficiency
 python -m spotter.peek 2026-05-28 --tag actstracking --components "TrackFindingAlg"
 python -m spotter.peek 2024-05-27 --tag actstracking --validation reco_efficiency
+
+# after a machine change: measure the factors of the machine at its moves to and
+# from the reference machine, and print the `scale` block for config/machines.yaml
+python -m spotter.checks machine-scale
 
 # write one standalone HTML page with all plot configs (about 16 MB)
 python -m spotter.gallery --output gallery.html
