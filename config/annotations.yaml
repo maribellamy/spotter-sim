@@ -110,6 +110,8 @@ annotations:
   # ActsCheckObjectCounts.ref; the change inside ACTS is not identified (maybe the surface array fixes)
   - { date: "2026-09-11", text: "!90675 - ACTS v47.7.0", flavors: *acts_default_fast, points: [reco_efficiency] }
   - { date: "2026-09-14", text: "!90704 - GBTS pixel seeding by default", flavors: *acts_default_fast, points: [pixel_seeding, ckf, full_track_chain, reco_efficiency] }
+  # hit efficiency +0.007 (main and LRT), CKF +3%; the only tracking MR in the nightly, marked Run4-MCReco-output-changed
+  - { date: "2026-10-03", text: "!91320 - ACTS v48.0.1", flavors: *acts_default_fast, points: [hit_efficiency, lrt_hit_efficiency, ckf] }
 
 # Public results and the last nightly that they contain. A plot shows each
 # reference as a dashed line at `date`.

@@ -4,7 +4,7 @@ log_y: true
 
 dates:
   start: "2024-02-01"
-  end: "2026-09-21"
+  end: "2026-10-06"
 
 # quiet periods: threshold 0.05, at least 60 days, margin 14 days
 axis_cuts:
