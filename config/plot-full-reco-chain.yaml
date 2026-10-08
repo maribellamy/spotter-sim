@@ -1,22 +1,23 @@
 title: "Full track reconstruction chain"
-description: "Full chain from clusterization to ambiguity resolution. The machine changes explain the steps on 2025-11-06 (up) and 2026-07-21 (down)."
+description: "Full chain from clusterization to ambiguity resolution, for the default (full) and the fast configurations. The legacy fast configuration has no ambiguity resolution; the ACTS fast configuration has none from 2025-07-24. The ACTS full configuration is the ACTS default until 2025-05-08. The machine changes explain the steps on 2024-02-27 (down, with the change to el9), 2025-11-06 (up) and 2026-07-21 (down)."
 log_y: true
 
 dates:
-  start: "2024-07-15"
+  start: "2024-02-01"
   end: "2026-09-21"
 
 # quiet periods: threshold 0.05, at least 60 days, margin 14 days
 axis_cuts:
+  - { start: "2024-07-23", end: "2024-08-27" }
   - { start: "2024-10-17", end: "2024-12-02" }
-  - { start: "2025-02-26", end: "2025-04-24" }
-  - { start: "2025-11-20", end: "2026-02-02" }
+  - { start: "2025-03-05", end: "2025-04-25" }
+  - { start: "2025-12-02", end: "2026-02-12" }
   - { start: "2026-03-20", end: "2026-04-22" }
   - { start: "2026-05-20", end: "2026-06-21" }
 
 flavors:
   legacy_default:
-    label: "Legacy Athena"
+    label: "Athena Default Tracking"
     points: full_track_chain
 
     piecewise_const:
@@ -27,8 +28,19 @@ flavors:
 
     compare_to_other: []
 
-  acts_default:
-    label: "Acts-based"
+  legacy_fast:
+    label: "Athena Fast Tracking"
+    points: full_track_chain
+
+    piecewise_const: []
+
+    annotations: []
+
+    compare_to_other: []
+
+  # the full ACTS configuration; the default until 2025-05-08
+  acts_legacy:
+    label: "Acts-based Full Tracking"
     points: full_track_chain
 
     piecewise_const: []
@@ -37,3 +49,13 @@ flavors:
 
     compare_to_other: ["legacy_default", "2024-09-28"]
 
+  # the fast ACTS configuration; the default from 2025-05-09
+  acts_fast:
+    label: "Acts-based Fast Tracking"
+    points: full_track_chain
+
+    piecewise_const: []
+
+    annotations: []
+
+    compare_to_other: []

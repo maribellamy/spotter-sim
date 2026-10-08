@@ -7,7 +7,7 @@ ylim: [0.84, 0.94]
 cut_threshold: 0.005
 
 dates:
-  start: "2024-01-01"
+  start: "2024-02-01"
   end: "2026-09-21"
 
 # quiet periods: threshold 0.005, at least 60 days, margin 14 days

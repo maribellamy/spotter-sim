@@ -213,8 +213,9 @@ def plot_timeseries(
     numbers the annotations in a list below the plot.
     """
     flavors = config["flavors"]
-    start = min(df.index.min() for df in data.values() if len(df) > 0)
-    end = max(df.index.max() for df in data.values() if len(df) > 0)
+    # the dates of the config, so that plots with the same dates have the same x range
+    start = pd.Timestamp(config["dates"]["start"])
+    end = pd.Timestamp(config["dates"]["end"])
 
     # the layout in inches, so that it does not depend on the number of annotations
     columns = 2 if len(annotations) > 8 else 1
@@ -239,7 +240,7 @@ def plot_timeseries(
         ]
     )
 
-    tag_label_x: list[float] = []
+    moves: list[tuple[float, str, str]] = []
     for flavor, df in data.items():
         if len(df) == 0:
             continue
@@ -262,22 +263,25 @@ def plot_timeseries(
         for d, old, new in tag_changes(df):
             if axis.is_cut([d])[0]:
                 continue
-            xd = axis.forward([d])[0]
-            # two moves on about the same date get their labels on both sides
-            side = "left" if any(abs(xd - x) < 15 for x in tag_label_x) else "right"
-            tag_label_x.append(xd)
-            ax.axvline(xd, color=color, lw=1.2, ls=(0, (2, 2)), alpha=0.8, zorder=1)
-            ax.text(
-                xd,
-                0.02,
-                f" {old} → {new}",
-                transform=blended_transform_factory(ax.transData, ax.transAxes),
-                rotation=90,
-                ha=side,
-                va="bottom",
-                fontsize=9,
-                color=TEXT_SECONDARY,
-            )
+            moves.append((axis.forward([d])[0], color, f" {old} → {new}"))
+
+    # two moves on about the same date get their labels on both sides:
+    # the label of the left line goes to the left, and the other label to the right
+    moves.sort(key=lambda m: m[0])
+    for i, (xd, color, label) in enumerate(moves):
+        side = "left" if i > 0 and xd - moves[i - 1][0] < 15 else "right"
+        ax.axvline(xd, color=color, lw=1.2, ls=(0, (2, 2)), alpha=0.8, zorder=1)
+        ax.text(
+            xd,
+            0.02,
+            label,
+            transform=blended_transform_factory(ax.transData, ax.transAxes),
+            rotation=90,
+            ha=side,
+            va="bottom",
+            fontsize=9,
+            color=TEXT_SECONDARY,
+        )
 
     # changes of the platform and of the SPOT machine, one line and label per date
     top = blended_transform_factory(ax.transData, ax.transAxes)

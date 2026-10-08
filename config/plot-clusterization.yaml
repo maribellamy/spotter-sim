@@ -2,7 +2,7 @@ title: "Clusterization"
 description: "Pixel plus strip clusterization. The new input geometry (!86481, !86485) raises the strip clusterization in March 2026."
 
 dates:
-  start: "2024-03-01"
+  start: "2024-02-01"
   end: "2026-09-21"
 
 # quiet periods: threshold 0.05, at least 60 days, margin 14 days
