@@ -95,13 +95,21 @@ annotations:
   - { date: "2026-05-05", text: "!87667 - LRT cot theta filter, sorted triplets", flavors: *acts_all, points: [lrt_seeding, lrt_ckf, strip_seeding] }
   - { date: "2026-05-06", text: "!87802 - SPOT tracking job adds trigger simulation", flavors: [legacy_default], points: [clusterization, full_track_chain] }
   - { date: "2026-05-25", text: "!88221 - Strip SP calibration in parameter estimation", flavors: *acts_all, points: [lrt_ckf] }
+  # the fast configuration has no strip seeds, so only the full configuration changes (+0.006)
+  - { date: "2026-05-25", text: "!88221 - Strip SP calibration in parameter estimation", flavors: [acts_legacy], points: [reco_efficiency] }
   - { date: "2026-07-21", text: "!89434 - LRT doublet dPhi cut", flavors: *acts_all, points: [lrt_seeding] }
   - { date: "2026-07-28", text: "!89555 - d0 seed and track cut 2 -> 5 mm", flavors: *all, points: [pixel_seeding, ckf, ambiguity, track_finding, full_track_chain, reco_efficiency] }
   - { date: "2026-07-29", text: "!89722 - LRT CPU improvements", flavors: *acts_all, points: [lrt_seeding] }
   - { date: "2026-08-10", text: "!90069 - ActsLegacy SPOT job removed (last nightly)", flavors: [acts_legacy], points: [full_track_chain, ckf, pixel_seeding] }
   - { date: "2026-08-17", text: "!90183 - No CKF material track states", flavors: *acts_default_fast, points: [ckf, full_track_chain] }
   - { date: "2026-08-27", text: "!90141 - ACTS tracking on by default (last legacy nightly)", flavors: *legacy_all, points: [track_finding, full_track_chain, clusterization, space_point_formation, ambiguity] }
-  - { date: "2026-09-14", text: "!90704 - GBTS pixel seeding by default", flavors: *acts_default_fast, points: [pixel_seeding, ckf, full_track_chain] }
+  # efficiency +0.003, hit efficiency and hit purity -0.005, pixel seeding +3%; no nightly on 2026-08-30
+  # !90496 (ACTS v47.6.1) is in the same nightly, but it does not change ActsCheckObjectCounts.ref
+  - { date: "2026-08-31", text: "!90482 - SPOT input with geometry ATLAS-P2-RUN4-05", flavors: *acts_default_fast, points: [clusterization, full_track_chain, reco_efficiency] }
+  # efficiency +0.003, hit efficiency +0.006; no nightly on 2026-09-10; the only MR in the window that changes
+  # ActsCheckObjectCounts.ref; the change inside ACTS is not identified (maybe the surface array fixes)
+  - { date: "2026-09-11", text: "!90675 - ACTS v47.7.0", flavors: *acts_default_fast, points: [reco_efficiency] }
+  - { date: "2026-09-14", text: "!90704 - GBTS pixel seeding by default", flavors: *acts_default_fast, points: [pixel_seeding, ckf, full_track_chain, reco_efficiency] }
 
 # Public results and the last nightly that they contain. A plot shows each
 # reference as a dashed line at `date`.

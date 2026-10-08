@@ -1,0 +1,31 @@
+title: "Combinatorial Kalman filter"
+log_y: true
+
+dates:
+  start: "2024-02-01"
+  end: "2026-09-21"
+
+step: "Execute"
+
+# quiet periods: threshold 0.05, at least 60 days, margin 14 days
+axis_cuts:
+  - { start: "2024-11-28", end: "2025-01-03" }
+  - { start: "2025-11-20", end: "2026-02-12" }
+  - { start: "2026-03-13", end: "2026-06-21" }
+
+flavors:
+  acts_default:
+    tag: "actstracking"
+    label: "ACTS Default CKF"
+    points: ckf
+
+    piecewise_const: []
+    annotations: []
+
+  acts_fast:
+    tag: "actstracking"
+    label: "ACTS Fast CKF"
+    points: ckf
+
+    piecewise_const: []
+    annotations: []

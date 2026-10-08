@@ -2,7 +2,7 @@ title: "Ambiguity resolution"
 description: "Ambiguity resolution. It moves into the CKF on 2025-07-24 (!81287), so the ACTS series ends there."
 
 dates:
-  start: "2024-03-01"
+  start: "2024-02-01"
   end: "2026-09-21"
 
 # quiet periods: threshold 0.05, at least 60 days, margin 14 days
