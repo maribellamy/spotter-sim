@@ -1,13 +1,10 @@
 from datetime import date
 import argparse
-import re
 from pathlib import Path
-import textwrap
 
 import yaml
 
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.transforms import blended_transform_factory
@@ -15,6 +12,14 @@ import mplhep as hep
 
 from spotter.axis_cuts import CompressedAxis, find_quiet_periods, periods_to_cuts
 from spotter.fitter import piecewise_const
+from spotter.machines import (
+    find_machine,
+    has_scale,
+    load_machines,
+    normalize_point,
+    reference_machine,
+)
+from spotter.points import PointData, load_fetcher_config, matches, transitive_parts
 
 
 # one fixed color and marker for each flavor, so that a flavor looks the same in every plot
@@ -33,14 +38,6 @@ TEXT_MUTED = "#8a8985"
 GRID = "#e4e3df"
 GAP_FILL = "#f0efec"
 
-# a plot of the key also shows the annotations of these points
-RELATED_POINTS = {
-    "track_finding": {"ckf", "seeding", "pixel_seeding", "strip_seeding"},
-    "seeding": {"pixel_seeding", "strip_seeding"},
-    "lrt": {"lrt_seeding", "lrt_ckf"},
-    "full_track_chain_lrt": {"full_track_chain", "lrt", "lrt_seeding", "lrt_ckf"},
-}
-
 METRICS = {
     "cpu": "CPU time per event [s]",
     "malloc": "Memory allocations per event [MB]",
@@ -48,10 +45,27 @@ METRICS = {
 }
 
 
+def hs23_unit(machines: list[dict], args) -> float | None:
+    """Return the HS23 per core of the reference machine if the plot shows HS23·s, else None."""
+    if args.raw or args.unit != "hs23" or not has_scale(machines):
+        return None
+    return reference_machine(machines).get("per_core")
+
+
 def read_data(
-    data_dir: Path, flavors: dict, start_date: date, end_date: date
+    data_dir: Path,
+    flavors: dict,
+    start_date: date,
+    end_date: date,
+    machines: list[dict] | None = None,
+    hs23: float | None = None,
+    fetcher_config: dict | None = None,
 ) -> dict[str, pd.DataFrame]:
-    """Read the CSV file of the configured point of each flavor."""
+    """Read the CSV file of the configured point of each flavor.
+
+    With `machines`, the CPU times are normalized to the reference machine;
+    with `hs23`, they are multiplied by it, to HS23·s.
+    """
     data = {}
     for flavor, flavor_config in flavors.items():
         file = data_dir / f"{flavor}_{flavor_config['points']}.csv"
@@ -61,6 +75,13 @@ def read_data(
         if len(df) == 0:
             print(f"{file}: no data from {start_date} to {end_date}")
             continue
+        if machines:
+            df = normalize_point(
+                df, data_dir=data_dir, machines=machines, flavor=flavor,
+                point=flavor_config["points"], fetcher_config=fetcher_config,
+            )
+        if hs23 and "cpu" in df:
+            df = df.assign(cpu=df["cpu"] * hs23)
         data[flavor] = df
     return data
 
@@ -68,35 +89,6 @@ def read_data(
 def smooth(df: pd.DataFrame, metric: str, window: int) -> pd.Series:
     """Rolling median, which follows the steps and ignores single outliers."""
     return df[metric].rolling(window, center=True, min_periods=1).median()
-
-
-def infrastructure_changes(
-    data: dict[str, pd.DataFrame], column: str
-) -> list[tuple[pd.Timestamp, str]]:
-    """Return the dates where the platform or the host of the SPOT logs changes.
-
-    `column` is "platform" or "host". A change within 7 days of an earlier
-    change of another flavor is the same change.
-    """
-    changes = {}
-    for df in data.values():
-        if column not in df:
-            continue
-        values = df[column]
-        changed = values.ne(values.shift()) & values.shift().notna()
-        for d, value in values[changed].items():
-            if not any(abs((d - c).days) <= 7 for c in changes):
-                changes[d] = value
-    return sorted(changes.items())
-
-
-def tag_changes(df: pd.DataFrame) -> list[tuple[pd.Timestamp, str, str]]:
-    """Return the dates where a flavor moves from one SPOT job to another."""
-    if "tag" not in df:
-        return []
-    tag = df["tag"]
-    changed = tag.ne(tag.shift()) & tag.shift().notna()
-    return [(d, tag.shift()[d], t) for d, t in tag[changed].items()]
 
 
 def compute_axis_cuts(
@@ -149,28 +141,15 @@ def mark_below_axis(
             )
 
 
-def find_machine(machines: list[dict], host: str, d: pd.Timestamp) -> dict | None:
-    """Return the configuration of a SPOT machine on a date, from config/machines.yaml."""
-    for m in machines:
-        start = pd.Timestamp(m.get("start", "1900-01-01"))
-        end = pd.Timestamp(m.get("end", "2100-01-01"))
-        if m["host"] == host and start <= d <= end:
-            return m
-    return None
-
-
 def per_core_label(machine: dict) -> str:
     """Return the HS23 per logical CPU, which is per thread if SMT is on."""
     unit = "thread" if "SMT on" in machine["cores"] else "core"
     return f"{machine['per_core']:.1f} per {unit}"
 
 
-def short_cpu(machine: dict) -> str:
-    """Return the CPU model without the vendor and the clock, for example "Xeon Gold 6326"."""
-    return re.sub(r"^(AMD|Intel) ", "", machine["cpu"]).split(" @")[0]
-
-
-def machine_captions(machines: list[dict], data: dict[str, pd.DataFrame]) -> list[str]:
+def machine_captions(
+    machines: list[dict], data: dict[str, pd.DataFrame], normalized: bool, hs23: float | None
+) -> list[str]:
     """Return one caption line for each machine configuration in the plotted data."""
     seen = []
     for df in data.values():
@@ -190,6 +169,18 @@ def machine_captions(machines: list[dict], data: dict[str, pd.DataFrame]) -> lis
             "(HEPiX values for the same CPU model and core configuration, "
             "w3.hepix.org/benchmarking/scores_HS23.html)"
         )
+    reference = reference_machine(machines)
+    if normalized and reference is not None and any(m.get("scale") for m in seen):
+        lines.append(
+            f"CPU times normalized to {reference['host']}: the values of the other machines are "
+            "divided by the ratio measured per algorithm at the machine changes "
+            "(config/machines.yaml), so that a line continues across a machine change"
+        )
+    if hs23 and reference is not None:
+        lines.append(
+            f"HS23·s = CPU time in s on {reference['host']} × {hs23:.1f}, its HS23 per core; "
+            "the job runs one thread, so the unit is only an estimate of the throughput"
+        )
     return lines
 
 
@@ -208,9 +199,9 @@ def plot_timeseries(
     """Plot one metric of all flavors over time.
 
     Each flavor shows its daily values as small markers and a rolling median
-    (or the configured piecewise constant fit) as a line. The plot marks the
-    changes of the platform and the moves of a flavor between SPOT jobs, and
-    numbers the annotations in a list below the plot.
+    (or the configured piecewise constant fit) as a line. The annotations are
+    numbered in a list below the plot, with a marker on every line that an
+    annotation affects.
     """
     flavors = config["flavors"]
     # the dates of the config, so that plots with the same dates have the same x range
@@ -225,7 +216,10 @@ def plot_timeseries(
         if start <= pd.Timestamp(r["date"]) <= end and not axis.is_cut([pd.Timestamp(r["date"])])[0]
     ]
     captions = [f"{r['name']}: data {r['range']}" for r in visible]
-    captions += machine_captions(machines, data)
+    captions += machine_captions(
+        machines, data, metric == "cpu" and not args.raw,
+        hs23_unit(machines, args) if metric == "cpu" else None,
+    )
     width, h_head, h_plot, h_ticks, h_row, h_foot = 15.0, 1.15, 5.6, 0.75, 0.27, 0.35
     h_caption = 0.22 * len(captions) + (0.2 if captions else 0)
     height = h_head + h_plot + h_ticks + h_caption + rows * h_row + (h_foot if rows else 0.1)
@@ -240,7 +234,6 @@ def plot_timeseries(
         ]
     )
 
-    moves: list[tuple[float, str, str]] = []
     for flavor, df in data.items():
         if len(df) == 0:
             continue
@@ -260,55 +253,6 @@ def plot_timeseries(
             lx, ly = axis.split_lines(df.index, smooth(df, metric, args.smooth_window))
         ax.plot(lx, ly, "-", lw=2, color=color, zorder=3, solid_capstyle="round")
 
-        for d, old, new in tag_changes(df):
-            if axis.is_cut([d])[0]:
-                continue
-            moves.append((axis.forward([d])[0], color, f" {old} → {new}"))
-
-    # two moves on about the same date get their labels on both sides:
-    # the label of the left line goes to the left, and the other label to the right
-    moves.sort(key=lambda m: m[0])
-    for i, (xd, color, label) in enumerate(moves):
-        side = "left" if i > 0 and xd - moves[i - 1][0] < 15 else "right"
-        ax.axvline(xd, color=color, lw=1.2, ls=(0, (2, 2)), alpha=0.8, zorder=1)
-        ax.text(
-            xd,
-            0.02,
-            label,
-            transform=blended_transform_factory(ax.transData, ax.transAxes),
-            rotation=90,
-            ha=side,
-            va="bottom",
-            fontsize=9,
-            color=TEXT_SECONDARY,
-        )
-
-    # changes of the platform and of the SPOT machine, one line and label per date
-    top = blended_transform_factory(ax.transData, ax.transAxes)
-    changes: dict[pd.Timestamp, list[str]] = {}
-    for column in ("platform", "host"):
-        for d, value in infrastructure_changes(data, column):
-            if value == "unknown":
-                continue
-            label = value
-            if column == "host":
-                m = find_machine(machines, value, d)
-                label = f"machine {value}" + (
-                    f" ({short_cpu(m)}, HS23 {per_core_label(m)})" if m else ""
-                )
-            same = [c for c in changes if abs((d - c).days) <= 7]
-            changes.setdefault(same[0] if same else d, []).append(label)
-    for d, labels in sorted(changes.items()):
-        # a label at the left edge would be cut off
-        if axis.is_cut([d])[0] or (d - start).days < 15:
-            continue
-        xd = axis.forward([d])[0]
-        ax.axvline(xd, color=TEXT_MUTED, lw=0.8, ls="-" if labels[0][0] != "m" else "-.", zorder=1)
-        ax.text(
-            xd, 0.985, " " + ", ".join(labels), transform=top, rotation=90, ha="right",
-            va="top", fontsize=9, color=TEXT_MUTED,
-        )
-
     # y axis from zero, because the reader compares magnitudes; a logarithmic
     # axis for data over more than a factor of about 10
     if args.log_y or config.get("log_y", False):
@@ -326,6 +270,10 @@ def plot_timeseries(
         ax.set_ylim(*config["ylim"])
         mark_below_axis(ax, axis, data, metric, config["ylim"][0], args.smooth_window)
     ylabel = config.get("ylabel", METRICS[metric]) if metric == "value" else METRICS[metric]
+    if metric == "cpu" and hs23_unit(machines, args):
+        ylabel = "CPU time per event [HS23·s]"
+    elif metric == "cpu" and not args.raw and has_scale(machines):
+        ylabel += f", normalized to {reference_machine(machines)['host']}"
     ax.set_ylabel(ylabel, fontsize=16)
 
     ax.grid(axis="y", color=GRID, lw=0.8, zorder=0)
@@ -356,6 +304,7 @@ def plot_timeseries(
         )
 
     # public results, as a dashed line at the last nightly that they contain
+    top = blended_transform_factory(ax.transData, ax.transAxes)
     for r in visible:
         xd = axis.forward([pd.Timestamp(r["date"])])[0]
         ax.axvline(xd, color=TEXT_PRIMARY, lw=1.3, ls=(0, (5, 3)), zorder=4)
@@ -381,15 +330,16 @@ def plot_timeseries(
         # a value outside the y axis gets its badge at the edge
         ylo, yhi = ax.get_ylim()
         pad = (yhi - ylo) * 0.03
-        for a in annotations:
-            if not args.log_y and not config.get("log_y", False):
-                a["y"] = min(max(a["y"], ylo + pad), yhi - pad)
+        linear = not args.log_y and not config.get("log_y", False)
         for n, a in enumerate(annotations, start=1):
-            ax.plot(a["x"], a["y"], "o", ms=14, color=TEXT_PRIMARY, mec="white", mew=1.5, zorder=6)
-            ax.text(
-                a["x"], a["y"], str(n), ha="center", va="center", fontsize=7.5,
-                color="white", fontweight="bold", zorder=7,
-            )
+            for x, y in a["positions"]:
+                if linear:
+                    y = min(max(y, ylo + pad), yhi - pad)
+                ax.plot(x, y, "o", ms=14, color=TEXT_PRIMARY, mec="white", mew=1.5, zorder=6)
+                ax.text(
+                    x, y, str(n), ha="center", va="center", fontsize=7.5,
+                    color="white", fontweight="bold", zorder=7,
+                )
         for n, a in enumerate(annotations, start=1):
             column, r = divmod(n - 1, rows)
             text = a["text"].replace("\n", " ")
@@ -427,26 +377,20 @@ def plot_timeseries(
     return fig
 
 
-def matches(annotation: dict, flavor: str, point: str) -> bool:
-    """Return True if an annotation of the central file belongs to a plotted line."""
-    points = set(annotation.get("points", []))
-    return flavor in annotation.get("flavors", []) and (
-        point in points or bool(points & RELATED_POINTS.get(point, set()))
-    )
-
-
 def collect_annotations(
     config: dict,
     central: list[dict],
+    parts: dict,
+    point_data: PointData,
     data: dict[str, pd.DataFrame],
     axis: CompressedAxis,
     metric: str,
     window: int,
 ) -> list[dict]:
-    """Return the annotations that are visible, with their position on the line.
+    """Return the annotations that are visible, with their positions on the lines.
 
-    An annotation that matches more than one line gets one marker, on the first
-    matching line in the order of the config.
+    An annotation that matches more than one line gets one marker with the
+    same number on each of these lines.
     """
     result = {}
     for flavor, flavor_config in config["flavors"].items():
@@ -454,124 +398,19 @@ def collect_annotations(
             continue
         df = data[flavor]
         line = smooth(df, metric, window)
-        candidates = [a for a in central if matches(a, flavor, flavor_config["points"])]
+        candidates = [
+            a for a in central if matches(a, flavor, flavor_config["points"], parts, point_data)
+        ]
         candidates += flavor_config.get("annotations", [])
         for a in candidates:
             d = pd.Timestamp(a["date"])
-            key = (d, a["text"])
-            if key in result:
-                continue
             if d < df.index.min() or d > df.index.max() or axis.is_cut([d])[0]:
                 continue
             nearest = line.index[line.index.get_indexer([d], method="nearest")[0]]
-            result[key] = {
-                "date": d,
-                "text": a["text"],
-                "x": axis.forward([nearest])[0],
-                "y": line[nearest],
-            }
+            key = (d, a["text"])
+            result.setdefault(key, {"date": d, "text": a["text"], "positions": []})
+            result[key]["positions"].append((axis.forward([nearest])[0], line[nearest]))
     return sorted(result.values(), key=lambda a: a["date"])
-
-
-def plot_relative(
-    args, config: dict, flavor: str, data: dict[str, pd.DataFrame], central: list[dict]
-):
-    """Plot the CPU time at the selected annotations relative to another flavor."""
-    point = config["flavors"][flavor]["points"]
-    selected_cpu_values = []
-    selected_dates = []
-    annotations = [a for a in central if matches(a, flavor, point)]
-    annotations += config["flavors"][flavor].get("annotations", [])
-    for annotation in sorted(annotations, key=lambda a: a["date"]):
-        d = pd.Timestamp(annotation["date"])
-        if not annotation.get("select", False) or len(data[flavor].loc[d:d]) == 0:
-            continue
-        selected_cpu_values.append([data[flavor].loc[d:d].cpu.iloc[0], annotation["label"]])
-        selected_dates.append(d)
-    if not selected_cpu_values:
-        return
-
-    with plt.style.context(hep.style.ATLAS):
-        compare_to_flavor, compare_to_date = config["flavors"][flavor]["compare_to_other"]
-        compare_to_cpu = (
-            data[compare_to_flavor].loc[compare_to_date:compare_to_date].cpu.iloc[0]
-        )
-        cpu_abs = np.array([t for t, _ in selected_cpu_values], dtype=np.float64)
-        cpu_labels = [f"{i}: {l}" for i, (_, l) in enumerate(selected_cpu_values, start=1)]
-        cpu_rel = cpu_abs / compare_to_cpu
-        cpu_rel = np.insert(cpu_rel, 0, cpu_rel[0])
-        cpu_rel = np.insert(cpu_rel, -1, cpu_rel[-1])
-
-        compare_fig, compare_ax = plt.subplots(figsize=(10, 5))
-
-        # this gets rid of the vertical lines. we clip in y later anyway
-        xrange = np.arange(len(cpu_rel))
-        xrange[0] -= 5
-        xrange[-1] += 5
-        compare_ax.fill_between(
-            xrange,
-            cpu_rel,
-            fc="#6699ff",  # kAzure - 4
-            ec="#003399",  # kAzure - 6
-            lw=3,
-        )
-
-        compare_ax.axhline(1, color="#003399", lw=3, ls="--")
-
-        compare_ax.set_xlim(0, len(cpu_rel) - 1)
-        _, ymax = compare_ax.get_ylim()
-        compare_ax.set_ylim(0.5, ymax + 0.2)
-
-        compare_ax.set_ylabel("Relative CPU time per event")
-        compare_ax.set_xlabel("Work Progress", labelpad=0)
-
-        ticks = np.arange(len(cpu_rel) - 1)
-        compare_ax.set_xticks(ticks)
-        compare_ax.set_xticklabels([])
-        compare_ax.set_xticks(np.arange(len(cpu_rel) - 1) + 0.5, minor=True)
-
-        compare_ax.set_yticks([1, 2, 3, 4, 5, 6])
-
-        compare_ax.set_xticklabels(
-            cpu_labels + [""],
-            rotation=-22,
-            ha="left",
-            va="top",
-            ma="center",
-            fontsize=15,
-            minor=True,
-        )
-        compare_ax.tick_params(axis="x", which="minor", tick1On=False, tick2On=False)
-
-        hep.atlas.text("Internal", fontsize=16, pad=0)
-
-        compare_title = config.get(
-            "compare_title",
-            f"{config['flavors'][flavor]['label']} vs {config['flavors'][compare_to_flavor]['label']} "
-            "track seeding and finding CPU/Event",
-        )
-        text = rf"""
-HL-LHC, $\sqrt{{s}}$ = 14 TeV, $t\bar{{t}}$, $\langle\mu\rangle$ = 200
-{compare_title}
-Start date: {selected_dates[0]:%d %B %Y}
-End date: {selected_dates[-1]:%d %B %Y}
-        """
-        text = textwrap.dedent(text.strip())
-
-        compare_ax.text(
-            0.97,
-            0.96,
-            s=text,
-            transform=compare_ax.transAxes,
-            ha="right",
-            va="top",
-            ma="left",
-        )
-
-        compare_fig.tight_layout()
-
-        compare_fig.savefig(args.plots_dir / f"cpu_{flavor}_rel.png")
-        compare_fig.savefig(args.plots_dir / f"cpu_{flavor}_rel.pdf")
 
 
 def main():
@@ -670,6 +509,27 @@ def main():
         action="store_true",
         help="Use a logarithmic y axis (the config can also set `log_y: true`)",
     )
+    parser.add_argument(
+        "--raw",
+        action="store_true",
+        help="Plot the measured CPU times, without the normalization to the reference "
+        "machine of config/machines.yaml",
+    )
+    parser.add_argument(
+        "--unit",
+        choices=["hs23", "s"],
+        default="hs23",
+        help="The unit of the CPU time: HS23·s (the normalized time times the HS23 per "
+        "core of the reference machine, as in the public plots) or seconds",
+    )
+    parser.add_argument(
+        "--fetcher-config",
+        type=Path,
+        default="config/fetcher.yaml",
+        help="Path to the fetcher config, for the sums of the points: an annotation "
+        "of a part also belongs to the sums that contain it, and a sum is normalized "
+        "as the sum of its normalized base points",
+    )
     args = parser.parse_args()
 
     with open(args.config, "r") as f:
@@ -677,11 +537,16 @@ def main():
 
     start_date = date.fromisoformat(config["dates"]["start"])
     end_date = date.fromisoformat(config["dates"]["end"])
-    data = read_data(args.data_dir, config["flavors"], start_date, end_date)
-    machines = []
-    if args.machines.exists():
-        with open(args.machines, "r") as f:
-            machines = yaml.safe_load(f)["machines"]
+    machines = load_machines(args.machines)
+    fetcher_config = None
+    if args.fetcher_config.exists():
+        fetcher_config = load_fetcher_config(args.fetcher_config)
+    parts = transitive_parts(fetcher_config) if fetcher_config else {}
+    point_data = PointData(args.data_dir)
+    data = read_data(
+        args.data_dir, config["flavors"], start_date, end_date,
+        None if args.raw else machines, hs23_unit(machines, args), fetcher_config,
+    )
     central = []
     references = []
     if args.annotations.exists():
@@ -690,16 +555,14 @@ def main():
         central = loaded["annotations"]
         references = loaded.get("references", [])
 
-    # the axis cuts do not hide annotations, moves between SPOT jobs, or changes of the infrastructure
+    # the axis cuts do not hide annotations
     keep = [
         pd.Timestamp(a["date"])
         for flavor, f in config["flavors"].items()
-        for a in [a for a in central if matches(a, flavor, f["points"])]
+        for a in [a for a in central if matches(a, flavor, f["points"], parts, point_data)]
         + f.get("annotations", [])
     ]
     keep += [pd.Timestamp(r["date"]) for r in references]
-    keep += [d for df in data.values() for d, _, _ in tag_changes(df)]
-    keep += [d for column in ("platform", "host") for d, _ in infrastructure_changes(data, column)]
     cuts = compute_axis_cuts(args, config, data, keep)
 
     if args.suggest_axis_cuts:
@@ -720,7 +583,9 @@ def main():
     annotations = (
         []
         if args.hide_annotations
-        else collect_annotations(config, central, data, axis, metric, args.smooth_window)
+        else collect_annotations(
+            config, central, parts, point_data, data, axis, metric, args.smooth_window
+        )
     )
     with plt.style.context(hep.style.ATLAS):
         plot_timeseries(
@@ -737,11 +602,6 @@ def main():
                 args=args, config=config, data=data, axis=axis, metric="malloc",
                 annotations=[], output=args.plots_dir / "mem", machines=machines, references=references,
             )
-
-    if not args.hide_annotations:
-        for flavor, flavor_config in config["flavors"].items():
-            if flavor_config.get("compare_to_other") and metric == "cpu":
-                plot_relative(args, config, flavor, data, central)
 
     if args.show:
         plt.show()

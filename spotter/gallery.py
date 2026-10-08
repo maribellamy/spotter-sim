@@ -231,7 +231,7 @@ figure img { display: block; width: 100%; max-width: 100%; height: auto; min-wid
   </nav>
   <main>
     <div class="intro">
-      <p><strong>Annotated</strong> shows numbered changes from <code>config/annotations.yaml</code>, checked against the athena history. Gray lines mark platform changes (solid) and SPOT machine changes (dash-dot, with the CPU and its HS23); a dotted line in a series color marks a move between SPOT jobs. The caption below each plot names the CPU of each machine and its HS23 (HEPScore23) benchmark. Dashed black lines mark the last nightly of the public results ATL-PHYS-PUB-2024-017 (2024-09-10) and PLOTS-IDTR-2025-06 (about 2025-10-15).</p>
+      <p><strong>Annotated</strong> shows numbered changes from <code>config/annotations.yaml</code>, checked against the athena history. An annotation gets a marker with the same number on every line that it affects. The caption below each plot names the CPU of each machine and its HS23 (HEPScore23) benchmark. The CPU times are normalized to the reference machine: the values of the other machines are divided by the factor measured for each algorithm at the machine changes (<code>config/machines.yaml</code>), so that a line continues across a machine change. The unit HS23·s is the normalized time in s times the HS23 per core of the reference machine. Dashed black lines mark the last nightly of the public results ATL-PHYS-PUB-2024-017 (2024-09-10) and PLOTS-IDTR-2025-06 (about 2025-10-15).</p>
       <p><strong>No axis cuts</strong> shows the full time axis. The cuts hide periods in which no line changes by more than 5% for at least 60 days.</p>
     </div>
 {{SECTIONS}}

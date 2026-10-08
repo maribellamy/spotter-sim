@@ -5,11 +5,20 @@
 # `per_core` is HS23 divided by the number of online CPUs (logical cores with
 # SMT on). The values are the CERN measurements for the same CPU model and core
 # configuration from https://w3.hepix.org/benchmarking/scores_HS23.html,
-# not measurements of the SPOT machines themselves.
+# not measurements of the SPOT machines themselves. HS23 is information only;
+# it does not predict the single-threaded SPOT times.
 #
 # `start` and `end` (both optional and inclusive) select the period of a
 # configuration, because aiatlasbm001 ran with SMT off in 2023/24 and with SMT
 # on from 2025-11-06.
+#
+# `reference: true` marks the machine that defines the scale of the CPU times.
+# `scale` is the CPU time on a machine divided by the CPU time on the reference
+# for the same code, from the nightlies around the moves between the machines
+# (`python -m spotter.checks machine-scale` prints the blocks below). The keys
+# are `default`, `<point>` and `<flavor>.<point>`. Only base points (`map`
+# points of config/fetcher.yaml) get a factor; a sum is the sum of its
+# normalized parts.
 
 machines:
   - host: aiatlasbm001
@@ -18,13 +27,68 @@ machines:
     cores: "2x16 cores, SMT off"
     hs23: 768.2
     per_core: 24.0
+    # aiatlasbm001 (..2024-12-31): factors from the moves on 2024-02-27
+    # the moves include a platform change (centos7-gcc11 -> el9-gcc13), so the factors include it
+    # python -m spotter.checks machine-scale --window 7 --min-points 3
+    scale:
+      default: 1.337
+      ambiguity: 1.326
+      ambiguity_score: 1.225
+      ambiguity_solver: 1.348
+      ckf: 1.313
+      pixel_clusterization: 1.395
+      pixel_seeding: 1.296
+      pixel_space_point_formation: 1.456
+      space_point_formation: 1.586
+      strip_clusterization: 1.372
+      strip_seeding: 1.200
+      strip_space_point_formation: 1.461
+      track_finding: 1.296
+      acts_default.pixel_clusterization: 1.285
+      acts_default.strip_clusterization: 1.431
+      acts_legacy.pixel_clusterization: 1.285
+      acts_legacy.strip_clusterization: 1.431
+      legacy_default.pixel_clusterization: 1.528
+      legacy_default.space_point_formation: 1.475
+      legacy_default.strip_clusterization: 1.320
+      legacy_default.track_finding: 1.270
+      legacy_fast.pixel_clusterization: 1.504
+      legacy_fast.space_point_formation: 1.705
+      legacy_fast.strip_clusterization: 1.309
+      legacy_fast.track_finding: 1.324
+
   - host: aiatlasbm001
     start: "2025-01-01"
     cpu: "AMD EPYC 7302"
     cores: "2x16 cores, SMT on"
     hs23: 994.5
     per_core: 15.5
+    # aiatlasbm001 (2025-01-01..): factors from the moves on 2025-11-06, 2026-07-21
+    # python -m spotter.checks machine-scale --window 7 --min-points 3
+    scale:
+      default: 1.203
+      ambiguity: 1.161
+      ambiguity_score: 1.212
+      ambiguity_solver: 1.166
+      ckf: 1.293
+      pixel_clusterization: 1.153
+      pixel_seeding: 1.195
+      pixel_space_point_formation: 1.191
+      prd_map: 1.464
+      region_creator: 1.823
+      space_point_formation: 1.315
+      strip_clusterization: 1.188
+      strip_seeding: 1.333
+      strip_space_point_formation: 1.278
+      track_finding: 1.192
+      acts_legacy.region_creator: 1.757
+      legacy_default.space_point_formation: 1.265
+      legacy_default.strip_clusterization: 1.214
+      legacy_fast.space_point_formation: 1.366
+      legacy_fast.strip_clusterization: 1.215
+
   - host: aiatlasbm006
+    reference: true
     cpu: "Intel Xeon Gold 6326 @ 2.90 GHz"
     cores: "2x16 cores, SMT off"
     hs23: 863.5

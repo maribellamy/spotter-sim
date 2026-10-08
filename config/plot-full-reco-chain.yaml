@@ -1,10 +1,10 @@
 title: "Full track reconstruction chain"
-description: "Full chain from clusterization to ambiguity resolution, for the default (full) and the fast configurations. The legacy fast configuration has no ambiguity resolution; the ACTS fast configuration has none from 2025-07-24. The ACTS full configuration is the ACTS default until 2025-05-08. The machine changes explain the steps on 2024-02-27 (down, with the change to el9), 2025-11-06 (up) and 2026-07-21 (down)."
+description: "Full chain from clusterization to ambiguity resolution, for the default (full) and the fast configurations. The legacy fast configuration has no ambiguity resolution; the ACTS fast configuration has none from 2025-07-24. The ACTS full configuration is the ACTS default until 2025-05-08. The CPU times are normalized to aiatlasbm006, so the machine changes on 2024-02-27 (together with the change to el9), 2025-11-06 and 2026-07-21 leave no step."
 log_y: true
 
 dates:
   start: "2024-02-01"
-  end: "2026-09-21"
+  end: "2026-10-06"
 
 # quiet periods: threshold 0.05, at least 60 days, margin 14 days
 axis_cuts:
@@ -26,8 +26,6 @@ flavors:
 
     annotations: []
 
-    compare_to_other: []
-
   legacy_fast:
     label: "Athena Fast Tracking"
     points: full_track_chain
@@ -35,8 +33,6 @@ flavors:
     piecewise_const: []
 
     annotations: []
-
-    compare_to_other: []
 
   # the full ACTS configuration; the default until 2025-05-08
   acts_legacy:
@@ -47,8 +43,6 @@ flavors:
 
     annotations: []
 
-    compare_to_other: ["legacy_default", "2024-09-28"]
-
   # the fast ACTS configuration; the default from 2025-05-09
   acts_fast:
     label: "Acts-based Fast Tracking"
@@ -58,4 +52,3 @@ flavors:
 
     annotations: []
 
-    compare_to_other: []
